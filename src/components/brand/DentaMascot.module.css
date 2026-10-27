@@ -10,6 +10,51 @@
   .blink {
     animation: blink 6s infinite;
   }
+  .alive {
+    transform-box: view-box;
+    transform-origin: 128px 150px;
+    animation: breathe 5.6s ease-in-out infinite;
+  }
+  .gaze {
+    animation: glance 9s ease-in-out infinite;
+  }
+  .mascot[data-mood='pensando'] .alive {
+    animation: ponder 3.8s ease-in-out infinite;
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(1px) rotate(-1deg) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) rotate(1.5deg) scale(1.025);
+  }
+}
+@keyframes glance {
+  0%,
+  35%,
+  65%,
+  100% {
+    transform: translate(0, 0);
+  }
+  42%,
+  52% {
+    transform: translate(5px, -2px);
+  }
+  78%,
+  85% {
+    transform: translate(-3px, 0);
+  }
+}
+@keyframes ponder {
+  0%,
+  100% {
+    transform: rotate(-3deg) translateY(0);
+  }
+  50% {
+    transform: rotate(3deg) translateY(-3px);
+  }
 }
 @keyframes blink {
   0%,

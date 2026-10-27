@@ -44,4 +44,6 @@ Por indicación de la usuaria, el wordmark original de Dentary identifica la bar
 
 El isotipo también se configura como favicon SVG y el título de la pestaña pasa a «Denta Copilot · Dentary». Denta V2 reemplaza el avatar genérico de la cabecera y los mensajes del asistente. La cabecera usa neutral y pensando según el estado ocupado existente; no interpreta el texto del modelo para mostrar éxito ni cambia el flujo de confirmación.
 
+Denta se presenta sin recuadro, fondo ni borde, tanto en cabecera como en mensajes. La cabecera de 48 px incorpora respiración, miradas y parpadeo sutiles, y un balanceo suave al consultar. Tocar la mascota permite pausar/reanudar; su estado vive en `DentaAvatar`, separado de la coordinación del chat. Los mensajes históricos permanecen estáticos. Todas las animaciones están limitadas a `prefers-reduced-motion: no-preference`. La geometría original de la mascota se conserva.
+
 Verificado en navegador: logos cargados desde los SVG existentes, cabecera/avatar/mensajes y variantes de escritorio/móvil. No se modifica la geometría ni se generan logos nuevos. La vista de revisión sigue siendo un ejemplo estático, independiente de la agenda.

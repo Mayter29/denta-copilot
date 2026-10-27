@@ -308,12 +308,12 @@ a {
 .copilot-avatar {
   display: grid;
   place-items: center;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-  border: 1px solid #cfebef;
-  border-radius: 13px;
-  width: 43px;
-  height: 43px;
+  background: none;
+  border: 0;
+  padding: 0;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
 }
 .chat-heading h1 {
   font-size: 16px;
@@ -599,6 +599,10 @@ a {
 .message.user .message-avatar {
   background: var(--surface-alt);
   color: var(--secondary);
+}
+.message.assistant .message-avatar {
+  background: none;
+  border-radius: 0;
 }
 .message-author {
   font-size: 11px;

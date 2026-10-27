@@ -23,6 +23,7 @@ import { AgendaPanel } from './AgendaPanel';
 import { ProposalCard } from './ProposalCard';
 import { DentaryBrand } from './brand/DentaryBrand';
 import { DentaMascot } from './brand/DentaMascot';
+import { DentaAvatar } from './brand/DentaAvatar';
 
 type View = Workspace & { today: string; modelReady: boolean };
 const suggestions = [
@@ -233,9 +234,7 @@ export function CopilotWorkspace() {
           </div>
         </header>
         <div className="chat-heading">
-          <div className="copilot-avatar">
-            <DentaMascot size={38} mood={busy ? 'pensando' : 'neutral'} />
-          </div>
+          <DentaAvatar busy={busy} />
           <div>
             <h1>Denta, tu copiloto de recepción</h1>
             <p>

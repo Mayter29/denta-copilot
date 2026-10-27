@@ -138,6 +138,7 @@ export function DentaMascot({
   mood = 'neutral',
   size = 24,
   blink = mood === 'neutral',
+  animate = false,
   decorative = true,
   label,
   className = '',
@@ -146,6 +147,8 @@ export function DentaMascot({
   size?: number;
   /** Parpadeo ocasional (solo con movimiento permitido). */
   blink?: boolean;
+  /** Movimiento ambiental opcional; se desactiva con prefers-reduced-motion. */
+  animate?: boolean;
   decorative?: boolean;
   label?: string;
   className?: string;
@@ -163,19 +166,23 @@ export function DentaMascot({
       aria-label={decorative ? undefined : label}
       data-mood={mood}
     >
-      <g className={styles.move} style={{ ...ORIGIN, transform: `rotate(${pose.tilt}deg)` }}>
-        <path
-          d={BODY}
-          fill="currentColor"
-          className={styles.move}
-          style={{ ...ORIGIN, transform: `scaleY(${pose.sy})` }}
-        />
-        <g
-          fill="#0B1220"
-          className={blink ? styles.blink : undefined}
-          style={{ transformBox: 'view-box', transformOrigin: '128px 110px' }}
-        >
-          <Eyes mood={mood} small={small} />
+      <g className={animate ? styles.alive : undefined}>
+        <g className={styles.move} style={{ ...ORIGIN, transform: `rotate(${pose.tilt}deg)` }}>
+          <path
+            d={BODY}
+            fill="currentColor"
+            className={styles.move}
+            style={{ ...ORIGIN, transform: `scaleY(${pose.sy})` }}
+          />
+          <g className={animate ? styles.gaze : undefined}>
+            <g
+              fill="#0B1220"
+              className={blink ? styles.blink : undefined}
+              style={{ transformBox: 'view-box', transformOrigin: '128px 110px' }}
+            >
+              <Eyes mood={mood} small={small} />
+            </g>
+          </g>
         </g>
       </g>
     </svg>
