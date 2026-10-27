@@ -203,7 +203,7 @@ export async function runSecretary(
     const generated = await agent.generate({ messages, abortSignal: options.abortSignal });
     const last = generated.steps.at(-1);
     if (
-      generated.finishReason === 'length' ||
+      generated.finishReason !== 'tool-calls' ||
       !last ||
       last.toolCalls.length !== 1 ||
       last.toolCalls[0].toolName !== 'submitResult'

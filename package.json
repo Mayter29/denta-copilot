@@ -8,6 +8,8 @@
     "start": "next start --hostname 127.0.0.1 --port 3420",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "eval:offline": "vitest run src/lib/server/conversation.eval.test.ts src/lib/server/endpoints.eval.test.ts",
+    "eval:live": "vitest run --config vitest.live.config.ts",
     "lint": "eslint src",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "format": "prettier --write src docs *.json *.ts *.mjs *.md",

@@ -1,6 +1,6 @@
 # Patrones del taller de Meta aplicables a Denta Copilot
 
-Revisión del 27 de octubre de 2026. Estado: análisis de código y propuesta de adaptación; estos cambios de comportamiento todavía no se implementaron.
+Revisión del 27 de octubre de 2026. El análisis original se conserva como antecedente. Actualización: contrato de resultados y harness conversacional implementados localmente; ver [contrato, cobertura y límites](EVALUACIONES.md). Las secciones de brechas y aceptación siguientes describen el estado observado antes de este corte.
 
 Repositorio: [meta-models/legal-agent-workshop](https://github.com/meta-models/legal-agent-workshop). Revisión fijada: `2a8efc86c70d9a42d76db0afb6ae1511e5a86d8e`. Copia de consulta bajo `work/legal-agent-workshop`, ignorada por Git. No se ejecutaron el taller, sus scripts, instalaciones ni llamadas a Meta. No se copiaron credenciales ni código Python al producto.
 

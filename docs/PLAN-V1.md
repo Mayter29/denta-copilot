@@ -62,7 +62,7 @@ El contexto conversacional se lee del servidor, con una ventana de 18 mensajes p
 | 1. Chat y agenda                   | Hecho local                            | Meta real consulta, propone, confirma y actualiza datos ficticios                          |
 | 2. Conocimiento y audio de archivo | Inicial funcional                      | Recuperación léxica y transcripción WAV a borrador; probar más voces y acentos             |
 | 3. Supabase                        | Conexión verificada; dominio pendiente | Auth, RLS, transacciones, migraciones, semillas y aislamiento probados                     |
-| 4. Calidad de conversación         | Pendiente                              | Streaming, estados de herramientas, recuperación de fallos, evals y presupuesto por sesión |
+| 4. Calidad de conversación         | Contrato y evals iniciales locales      | Pendientes: streaming, recuperación de fallos y presupuesto por sesión                     |
 | 5. Voz en vivo e integraciones     | Pendiente de priorización              | Validar capacidad real, latencia, cancelación y costos; MCP/API si aporta a la demo        |
 | 6. Entrega                         | Pendiente                              | Demo desplegada, QA, aportes identificables, repo público y video de tres minutos          |
 
@@ -86,7 +86,7 @@ WhatsApp será otro adaptador de entrada/salida. Se debe resolver organización 
 
 ## Qué conviene llevar después a Dentary
 
-Para la siguiente etapa del agente, seguir la [revisión de patrones del taller de Meta](AGENT-PATTERNS.md): resultados verificables, evaluaciones conversacionales, trazas por ejecución y recuperación. El análisis distingue patrones seleccionados de capacidades todavía pendientes.
+El contrato de resultados y el harness inicial están implementados; ver [evaluaciones y límites](EVALUACIONES.md). Para los siguientes cortes del agente, seguir la [revisión de patrones del taller de Meta](AGENT-PATTERNS.md): resultados verificables, evaluaciones conversacionales, trazas por ejecución y recuperación. El análisis distingue patrones seleccionados de capacidades todavía pendientes.
 
 Las reglas de agenda puras, el contrato de propuesta/confirmación, las pruebas de choques e idempotencia, el manejo de audio a borrador y las evaluaciones del agente. La integración final debe llamar a los servicios y permisos existentes de Dentary; no reemplazar sus restricciones clínicas ni sus políticas multi tenant con las simplificaciones de esta demo.
 

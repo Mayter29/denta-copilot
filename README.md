@@ -24,6 +24,7 @@ Abrir [la demo local](http://127.0.0.1:3420). El proceso escucha únicamente en 
 
 - Chat real con Meta Model API, Muse Spark y AI SDK 7.
 - Consultas de disponibilidad, reservas, cancelaciones y reagendamiento mediante herramientas tipadas.
+- Resultados estructurados con referencias verificadas por turno, estados explícitos y comprobantes del servidor al confirmar.
 - Propuestas guardadas por servidor; solo un clic de confirmación ejecuta el cambio.
 - Horarios, duración, choques, vencimiento, control de versión, confirmación idempotente y auditoría.
 - Agenda visible y fuentes ficticias de conocimiento con recuperación léxica.
@@ -44,6 +45,11 @@ Supabase está fijado a `lyphdzeazqnaepyzzisi` para impedir conexiones accidenta
 
 ```powershell
 pnpm check
+pnpm eval:offline
+# Evaluación separada con Meta real y consumo de API; ver presupuesto en docs/EVALUACIONES.md
+pnpm eval:live
 ```
 
 Más información: [idea y plan V1](docs/PLAN-V1.md), [referencias y contribuciones](docs/REUTILIZACION.md), [validación](docs/VALIDACION.md).
+
+Contrato, cobertura y límites: [evaluaciones conversacionales](docs/EVALUACIONES.md).

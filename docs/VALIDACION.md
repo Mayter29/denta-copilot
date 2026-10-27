@@ -24,3 +24,13 @@ Los artefactos intermedios de pruebas están en `work/`, excluido de Git. No con
 ## Avance de conexión Supabase
 
 Identidad confirmada en Chrome (denta / dentacopilot). Clave publicable guardada solo en entorno local. Consulta real de API Auth aceptada. Nueve pruebas adicionales de configuración: 34 pruebas en total. La URL queda fijada al proyecto indicado. Ver docs/SUPABASE.md para límites y reproducibilidad.
+
+## Avance de resultados verificables y evaluaciones
+
+- `pnpm check`: lint, tipos, 61 pruebas offline en ocho archivos y build aprobados el 27 de octubre de 2026. El harness dedicado contiene 24 escenarios, incluidos cierres del proveedor por longitud, error y filtro.
+- `pnpm eval:live`: 3/3 casos aprobados con Meta real, ejecutados por separado. Datos faltantes, reserva pendiente con parámetros esperados y horario con fuente recuperada. Cero citas nuevas y cero auditorías; estado ficticio en memoria.
+- La suite offline ejercita el bucle del SDK, herramientas y endpoints; incluye referencias inválidas, fallos, límite de pasos, timeout, ID de otra sesión, inyección que intenta invocar una herramienta de escritura inexistente, conflicto/versión/vencimiento al confirmar, doble clic y audio a texto sin mutaciones.
+- Este corte no repite QA visual ni transcripción real. La evidencia anterior de navegador y audio corresponde a la base previa. La cobertura nueva de audio simula el proveedor y comprueba el endpoint, sin probar el selector del navegador.
+- Sin despliegue, cambios remotos en Supabase ni migraciones. El repositorio sigue en `main`; contrato inicial enviado como `16fe351`.
+
+Ver [contrato, comandos, presupuesto y límites](EVALUACIONES.md). Las pruebas simuladas no miden la calidad lingüística del modelo ni RLS. Tres casos con Meta son una validación inicial de integración, no una evaluación general de robustez. Los IDs/versiones de fuentes verifican procedencia; no certifican cada afirmación del texto.
