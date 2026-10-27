@@ -86,6 +86,8 @@ WhatsApp será otro adaptador de entrada/salida. Se debe resolver organización 
 
 ## Qué conviene llevar después a Dentary
 
+Para la siguiente etapa del agente, seguir la [revisión de patrones del taller de Meta](AGENT-PATTERNS.md): resultados verificables, evaluaciones conversacionales, trazas por ejecución y recuperación. El análisis distingue patrones seleccionados de capacidades todavía pendientes.
+
 Las reglas de agenda puras, el contrato de propuesta/confirmación, las pruebas de choques e idempotencia, el manejo de audio a borrador y las evaluaciones del agente. La integración final debe llamar a los servicios y permisos existentes de Dentary; no reemplazar sus restricciones clínicas ni sus políticas multi tenant con las simplificaciones de esta demo.
 
 ## Guion propuesto del video

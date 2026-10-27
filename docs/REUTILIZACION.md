@@ -12,6 +12,8 @@ Este registro distingue antecedentes de trabajo creado el 27 de octubre de 2026.
 
 ## Trabajo nuevo de este proyecto
 
+El repositorio público `meta-models/legal-agent-workshop` se revisó en el commit `2a8efc86c70d9a42d76db0afb6ae1511e5a86d8e` como referencia de verificación, progreso y evaluaciones. No se importó su código Python ni se ejecutó el taller. La adaptación propuesta y sus límites están en [AGENT-PATTERNS.md](AGENT-PATTERNS.md).
+
 Scaffolding, interfaz de Denta Copilot, semilla ficticia, dominio de agenda, validación de horarios, propuestas, confirmación, auditoría, persistencia por sesión local, integración directa de Meta mediante AI SDK, recuperación léxica de fuentes ficticias, transcripción de WAV y pruebas. Todo creado para este repositorio durante el evento.
 
 ## Límites de la reutilización
