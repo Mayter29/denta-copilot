@@ -1,0 +1,37 @@
+{
+  "name": "denta-copilot",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3420",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1 --port 3420",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "format": "prettier --write src docs *.json *.ts *.mjs *.md"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "4.0.103",
+    "ai": "7.0.154",
+    "lucide-react": "1.62.0",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-markdown": "10.1.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.3",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  },
+  "packageManager": "pnpm@10.12.1",
+  "type": "module"
+}

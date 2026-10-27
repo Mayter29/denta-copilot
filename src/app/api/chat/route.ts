@@ -1,0 +1,50 @@
+import { randomUUID } from 'node:crypto';
+import { z } from 'zod';
+import { createSecretary } from '@/lib/server/agent';
+import {
+  apiError,
+  boundedJson,
+  guardLocal,
+  RequestError,
+  sessionId,
+  withWorkspace,
+} from '@/lib/server/workspace';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+const inputSchema = z.object({ text: z.string().trim().min(1).max(2000) }).strict();
+export async function POST(request: Request) {
+  try {
+    guardLocal(request, true);
+    const parsed = inputSchema.safeParse(await boundedJson(request));
+    if (!parsed.success) throw new RequestError('Escribí un mensaje de hasta 2000 caracteres.');
+    const id = await sessionId();
+    return await withWorkspace(id, async (state) => {
+      if (state.messages.length >= 80)
+        throw new RequestError('Alcanzaste el límite de esta sesión de demo.', 429);
+      const agent = createSecretary(state);
+      const result = await agent.generate({
+        messages: [
+          ...state.messages.slice(-18).map((m) => ({ role: m.role, content: m.content })),
+          { role: 'user', content: parsed.data.text },
+        ],
+        abortSignal: AbortSignal.any([request.signal, AbortSignal.timeout(55_000)]),
+      });
+      state.messages.push(
+        { id: randomUUID(), role: 'user', content: parsed.data.text },
+        {
+          id: randomUUID(),
+          role: 'assistant',
+          content: result.text || 'Revisá las propuestas de acción que aparecen abajo.',
+        },
+      );
+      return Response.json({
+        messages: state.messages,
+        proposals: state.proposals,
+        appointments: state.appointments,
+        audit: state.audit,
+      });
+    });
+  } catch (error) {
+    return apiError(error);
+  }
+}
