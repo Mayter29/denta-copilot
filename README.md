@@ -30,7 +30,9 @@ Abrir [la demo local](http://127.0.0.1:3420). El proceso escucha únicamente en 
 - Audio WAV mono, PCM 16 bits, 16 kHz, hasta 60 s / 2 MB, transcrito por Muse Voice Transcribe a un borrador editable. No se envía automáticamente al agente.
 - Datos de cada sesión en `work/sessions`, separados con cookie firmada HttpOnly. Persisten recargas y reinicios del proceso local.
 
-El chat espera la respuesta completa; todavía no transmite tokens progresivamente. No hay conexión a Supabase, WhatsApp, servidor MCP ni voz en vivo. La persistencia local es para un único proceso y datos ficticios. No es el almacenamiento de producción.
+El chat espera la respuesta completa; todavía no transmite tokens progresivamente. La conexión al Supabase exclusivo de este proyecto está configurada y verificada; la agenda y el chat aún usan archivos locales. WhatsApp, servidor MCP y voz en vivo siguen pendientes. La persistencia local es para un único proceso y datos ficticios. No es el almacenamiento de producción.
+
+Supabase está fijado a `lyphdzeazqnaepyzzisi` para impedir conexiones accidentales a otros proyectos. Verificar con `pnpm supabase:check`. Ver [configuración y alcance](docs/SUPABASE.md).
 
 ## Prueba rápida
 

@@ -56,19 +56,19 @@ El contexto conversacional se lee del servidor, con una ventana de 18 mensajes p
 
 ## Estado por corte
 
-| Corte                              | Estado                       | Criterio de salida                                                                         |
-| ---------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------ |
-| 0. Base segura y narrativa         | Hecho local                  | Entornos ignorados, dependencias fijadas, idea y procedencia documentadas                  |
-| 1. Chat y agenda                   | Hecho local                  | Meta real consulta, propone, confirma y actualiza datos ficticios                          |
-| 2. Conocimiento y audio de archivo | Inicial funcional            | Recuperación léxica y transcripción WAV a borrador; probar más voces y acentos             |
-| 3. Supabase                        | Pendiente del proyecto nuevo | Auth, RLS, transacciones, migraciones, semillas y aislamiento probados                     |
-| 4. Calidad de conversación         | Pendiente                    | Streaming, estados de herramientas, recuperación de fallos, evals y presupuesto por sesión |
-| 5. Voz en vivo e integraciones     | Pendiente de priorización    | Validar capacidad real, latencia, cancelación y costos; MCP/API si aporta a la demo        |
-| 6. Entrega                         | Pendiente                    | Demo desplegada, QA, aportes identificables, repo público y video de tres minutos          |
+| Corte                              | Estado                                 | Criterio de salida                                                                         |
+| ---------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 0. Base segura y narrativa         | Hecho local                            | Entornos ignorados, dependencias fijadas, idea y procedencia documentadas                  |
+| 1. Chat y agenda                   | Hecho local                            | Meta real consulta, propone, confirma y actualiza datos ficticios                          |
+| 2. Conocimiento y audio de archivo | Inicial funcional                      | Recuperación léxica y transcripción WAV a borrador; probar más voces y acentos             |
+| 3. Supabase                        | Conexión verificada; dominio pendiente | Auth, RLS, transacciones, migraciones, semillas y aislamiento probados                     |
+| 4. Calidad de conversación         | Pendiente                              | Streaming, estados de herramientas, recuperación de fallos, evals y presupuesto por sesión |
+| 5. Voz en vivo e integraciones     | Pendiente de priorización              | Validar capacidad real, latencia, cancelación y costos; MCP/API si aporta a la demo        |
+| 6. Entrega                         | Pendiente                              | Demo desplegada, QA, aportes identificables, repo público y video de tres minutos          |
 
 ## Diseño de la integración Supabase
 
-Crear un proyecto exclusivo para Denta Copilot. No copiar URLs, claves, conexiones ni datos de Odontoser. Variables reservadas en `.env.example`; hoy no se crea ningún cliente ni se ejecuta SQL remoto.
+Proyecto exclusivo confirmado: **denta**, organización **dentacopilot**, referencia `lyphdzeazqnaepyzzisi`. URL y clave publicable configuradas localmente, cliente preparado y acceso a la API Auth comprobado. La configuración rechaza otros destinos. Ver `docs/SUPABASE.md`. Todavía no se ejecuta SQL remoto ni se migra la persistencia de agenda.
 
 Modelo propuesto: organizaciones/sedes, membresías, profesionales, servicios, citas, conversaciones, mensajes, propuestas, eventos de auditoría y documentos/fragmentos de conocimiento. Todas las filas de una organización llevan `tenant_id`. RLS debe comprobar pertenencia desde `auth.uid()`, y las claves foráneas deben impedir referencias cruzadas entre organizaciones.
 

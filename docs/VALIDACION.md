@@ -15,8 +15,12 @@ Historia probada: el usuario pide una operación administrativa por chat → API
 
 ## Límites de la evidencia
 
-No hay Supabase conectado ni aislamiento RLS probado. La persistencia usa archivos locales y mutex en un único proceso; no prueba concurrencia distribuida ni durabilidad de producción. No hay envío a WhatsApp, servidor MCP, API keys de consumidores, voz en vivo, embeddings ni streaming de tokens. No se ejecutaron migraciones, escrituras en otros proyectos ni deploy. El código de este corte se versiona en GitHub como primer avance.
+Supabase `lyphdzeazqnaepyzzisi` tiene configuración y conectividad a API Auth verificadas; la agenda aún no persiste allí y no hay aislamiento RLS probado. La persistencia usa archivos locales y mutex en un único proceso; no prueba concurrencia distribuida ni durabilidad de producción. No hay envío a WhatsApp, servidor MCP, API keys de consumidores, voz en vivo, embeddings ni streaming de tokens. No se ejecutaron migraciones, escrituras en otros proyectos ni deploy. El código de este corte se versiona en GitHub como primer avance.
 
 Faltan evaluaciones adversariales de inyección y permisos, citas ambiguas, audio real en español, interrupciones, reintentos del proveedor, tasas de error, latencia p95 y presupuestos. La semilla incluye citas del día, incluso si la hora ya pasó, para demostrar la visualización; la validación de nuevas reservas rechaza pasado.
 
 Los artefactos intermedios de pruebas están en `work/`, excluido de Git. No contienen expedientes reales.
+
+## Avance de conexión Supabase
+
+Identidad confirmada en Chrome (denta / dentacopilot). Clave publicable guardada solo en entorno local. Consulta real de API Auth aceptada. Nueve pruebas adicionales de configuración: 34 pruebas en total. La URL queda fijada al proyecto indicado. Ver docs/SUPABASE.md para límites y reproducibilidad.

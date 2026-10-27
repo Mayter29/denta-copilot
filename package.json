@@ -10,16 +10,19 @@
     "test": "vitest run",
     "lint": "eslint src",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "format": "prettier --write src docs *.json *.ts *.mjs *.md"
+    "format": "prettier --write src docs *.json *.ts *.mjs *.md",
+    "supabase:check": "node --experimental-strip-types scripts/check-supabase.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.103",
+    "@supabase/supabase-js": "2.118.0",
     "ai": "7.0.154",
     "lucide-react": "1.62.0",
     "next": "16.4.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-markdown": "10.1.0",
+    "server-only": "0.0.1",
     "zod": "4.6.7"
   },
   "devDependencies": {

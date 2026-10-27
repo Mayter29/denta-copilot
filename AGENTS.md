@@ -8,6 +8,7 @@
 - Validar horarios, conflictos, versión e idempotencia al ejecutar, no solo al proponer.
 - Persistencia local: un proceso, loopback:3420, cookie firmada, carpetas work/sessions.
 - Para Supabase: proyecto nuevo, Auth, RLS y transacciones antes de publicar; no asumir aislamiento por filtros.
+- Supabase exclusivo: `lyphdzeazqnaepyzzisi` (denta / dentacopilot). Leer `docs/SUPABASE.md`. Todo cliente pasa por `getSupabaseConfig`; nunca sustituirlo por un proyecto de Dentary/ECP.
 - No copiar código corporativo ni activos de EVA/Insight a este repositorio público.
 - Verificar API del SDK/Next en node_modules de la versión instalada.
 - Calidad: pnpm check. Reportar local/publicado y límites de verificación.
