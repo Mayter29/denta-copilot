@@ -13,6 +13,30 @@
 - Verificar API del SDK/Next en node_modules de la versión instalada.
 - Calidad: pnpm check. Reportar local/publicado y límites de verificación.
 
+## Calidad y arquitectura para avanzar rápido
+
+- Resolver el problema con el cambio más pequeño que quede claro y comprobable. Reutilizar lo existente; introducir dependencias, abstracciones o capas solo cuando aporten al caso actual.
+- Mantener componentes enfocados. Separar presentación, coordinación de estado y lógica de negocio cuando mezclarlas dificulte entender o probar el flujo. No acumular chat, audio, agenda y acceso a datos en un componente monolítico.
+- Un componente de unas 250–300 líneas merece revisión de responsabilidades; es una señal, no una meta ni motivo para dividir archivos mecánicamente. Extraer una unidad con nombre y contrato claros. No convertir cada fragmento de JSX en un componente ni crear hooks sin beneficio concreto.
+- Arquitectura actual: `src/lib/domain` contiene reglas y contratos sin React, Next, HTTP ni acceso a datos; `src/lib/server` integra proveedor y persistencia; `src/app/api` valida sesión/entrada y coordina; `src/components` presenta e interactúa. Las dependencias apuntan al dominio, nunca del dominio a la UI o al servidor.
+- Mantener código y secretos de servidor fuera del cliente. Aplicar autorización y validación en la frontera de confianza; el prompt, una tarjeta o un filtro visual no sustituyen controles de servidor.
+- TypeScript con contratos explícitos en las fronteras; entradas externas se validan en ejecución. Evitar `any`, casts y aserciones no nulas que oculten incertidumbre. Estados derivados se calculan; efectos sincronizan con sistemas externos. No desactivar reglas de hooks para esconder un problema.
+- Optimizar con evidencia: revisar solicitudes duplicadas, trabajo secuencial independiente, payloads y renders antes de añadir caché, memoización o dependencias. Accesibilidad, teclado, foco visible, estados de error/carga y movimiento reducido forman parte de la UI.
+
+### Validación proporcional
+
+- Durante cambios de texto/estilo: revisión de diff y comprobación visual si afecta UI. Durante cambios de lógica: tipos/lint y pruebas relevantes. Antes de commit/push con código o configuración ejecutable: `pnpm check`.
+- Al cambiar componentes/hooks o revisar arquitectura React: `pnpm react:doctor`. Para cambios grandes, ejecutar antes y después. La versión está fijada; el comando desactiva telemetría, score remoto y análisis externo de dependencias. Los informes quedan en `work/react-doctor`, ignorado por Git.
+- React Doctor complementa ESLint, tipos, pruebas y navegador. Verificar cada hallazgo en el código; corregir regresiones y problemas relevantes del alcance. No perseguir 100 puntos, ocultar reglas ni iniciar refactors masivos para limpiar avisos. Deuda previa y falsos positivos se documentan con evidencia y siguiente paso; un fallo real de seguridad o integridad del cambio se resuelve antes de publicarlo.
+- Tests para comportamiento e invariantes: conflictos, versión, idempotencia, aislamiento y confirmación humana. No agregar tests que solo reproduzcan la implementación o congelen estilos/copys por rutina. Si cambia la frontera del agente, ejecutar `pnpm eval:offline`; `pnpm eval:live` es separado, con presupuesto explícito en `docs/EVALUACIONES.md`.
+- Documentación/skills sin cambios ejecutables: enlaces, comandos, formato y validación de la skill; no repetir build o llamadas a Meta sin motivo. Comprobar el resultado real y reportar verificaciones omitidas o bloqueadas.
+
+### Repositorio público
+
+- Commits pequeños y descriptivos; diff enfocado, sin temporales, informes, secretos, datos reales ni material privado copiado. Conservar procedencia y licencias cuando corresponda.
+- Una fuente de documentación por decisión. README con comandos reproducibles y límites actuales; distinguir implementado, probado localmente, subido a GitHub y desplegado. No afirmar capacidades a partir de una puntuación o simulación.
+- Para una revisión de calidad, arquitectura o refactor significativo, usar la skill local [denta-quality](.agents/skills/denta-quality/SKILL.md). No exige ceremonias adicionales para cambios triviales.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

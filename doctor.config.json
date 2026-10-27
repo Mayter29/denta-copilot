@@ -1,0 +1,5 @@
+{
+  "ignore": {
+    "files": ["work/**", ".next/**", "out/**", "coverage/**", "node_modules/**", ".git/**"]
+  }
+}

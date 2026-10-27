@@ -11,6 +11,7 @@
     "eval:offline": "vitest run src/lib/server/conversation.eval.test.ts src/lib/server/endpoints.eval.test.ts",
     "eval:live": "vitest run --config vitest.live.config.ts",
     "lint": "eslint src",
+    "react:doctor": "react-doctor . --yes --no-telemetry --no-supply-chain --verbose --output-dir work/react-doctor",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "format": "prettier --write src docs *.json *.ts *.mjs *.md",
     "supabase:check": "node --experimental-strip-types scripts/check-supabase.mjs"
@@ -34,6 +35,7 @@
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.3",
     "prettier": "3.9.10",
+    "react-doctor": "0.9.18",
     "typescript": "6.0.3",
     "vitest": "5.0.5"
   },

@@ -45,6 +45,7 @@ Supabase está fijado a `lyphdzeazqnaepyzzisi` para impedir conexiones accidenta
 
 ```powershell
 pnpm check
+pnpm react:doctor
 pnpm eval:offline
 # Evaluación separada con Meta real y consumo de API; ver presupuesto en docs/EVALUACIONES.md
 pnpm eval:live
@@ -53,3 +54,5 @@ pnpm eval:live
 Más información: [idea y plan V1](docs/PLAN-V1.md), [referencias y contribuciones](docs/REUTILIZACION.md), [validación](docs/VALIDACION.md).
 
 Contrato, cobertura y límites: [evaluaciones conversacionales](docs/EVALUACIONES.md).
+
+Reglas, skill local y diagnóstico inicial: [calidad y arquitectura](docs/CALIDAD.md).
