@@ -1,0 +1,23 @@
+.mascot {
+  color: var(--accent, #2a98ae);
+  flex-shrink: 0;
+  display: block;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .move {
+    transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .blink {
+    animation: blink 6s infinite;
+  }
+}
+@keyframes blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  95.5% {
+    transform: scaleY(0.3);
+  }
+}
