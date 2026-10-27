@@ -20,6 +20,8 @@ Scaffolding, interfaz de Denta Copilot, semilla ficticia, dominio de agenda, val
 
 Compositor actualizado: se tomó la captura aportada por la usuaria y se consultó el patrón visual de la barra de EVA como referencia. Se escribió CSS/JSX propio con la paleta Dentary y los iconos Lucide ya instalados. No se incorporaron código ni activos de EVA; se conserva audio WAV a borrador, sin añadir voz en vivo.
 
+Dictado desde micrófono: controlador Web Audio, AudioWorklet, codificador PCM, hook de ciclo de vida y compositor extraído son implementaciones nuevas de este repositorio. Se reutiliza su endpoint WAV; no se copió la captura de voz de EVA ni se añaden conexiones externas de otros proyectos.
+
 Actualización de marca: los SVG originales de Dentary y la mascota Denta V2 del paquete confirmado por el usuario están en `public/brand` y en `/brand-review`; son activos preexistentes de su autoría. Ya se integran en la aplicación principal: logo/isotipo Dentary, favicon y avatar Denta en cabecera y mensajes. Ver [inventario e integración](BRANDING.md).
 
 No se importaron datos reales de pacientes, empleados, clínicas, contactos o agendas. No se copiaron `.env`, secretos, credenciales ni conexiones de otros proyectos. El único secreto de proveedor configurado es la clave Meta indicada por la participante en `.env.local`, excluida de Git.

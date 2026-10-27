@@ -1,14 +1,11 @@
 'use client';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import {
-  ArrowUp,
-  AudioLines,
   ArrowUpRight,
   CalendarDays,
   CheckCheck,
   ChevronDown,
-  Command,
   Layers2,
   LoaderCircle,
   MessageSquare,
@@ -24,6 +21,7 @@ import { ProposalCard } from './ProposalCard';
 import { DentaryBrand } from './brand/DentaryBrand';
 import { DentaMascot } from './brand/DentaMascot';
 import { DentaAvatar } from './brand/DentaAvatar';
+import { ChatComposer } from './chat/ChatComposer';
 
 type View = Workspace & { today: string; modelReady: boolean };
 const suggestions = [
@@ -69,8 +67,12 @@ export function CopilotWorkspace() {
   const bottom = useRef<HTMLDivElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const inFlight = useRef(false);
-  const audioInput = useRef<HTMLInputElement>(null);
-  const [transcribing, setTranscribing] = useState(false);
+  const [audioActive, setAudioActive] = useState(false);
+  const audioActiveRef = useRef(false);
+  const onAudioActivity = useCallback((active: boolean) => {
+    audioActiveRef.current = active;
+    setAudioActive(active);
+  }, []);
   const load = useCallback(async () => {
     try {
       const data = (await fetchJson('/api/workspace')) as View;
@@ -90,9 +92,8 @@ export function CopilotWorkspace() {
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [state?.messages.length, state?.proposals.length, busy]);
-  async function send(event?: FormEvent) {
-    event?.preventDefault();
-    if (!draft.trim() || inFlight.current || !state) return;
+  async function send() {
+    if (!draft.trim() || inFlight.current || audioActiveRef.current || !state) return;
     inFlight.current = true;
     setBusy(true);
     setError('');
@@ -110,7 +111,7 @@ export function CopilotWorkspace() {
     }
   }
   async function onDecide(id: string, approved: boolean) {
-    if (inFlight.current) return;
+    if (inFlight.current || audioActiveRef.current) return;
     inFlight.current = true;
     setBusy(true);
     setError('');
@@ -131,37 +132,9 @@ export function CopilotWorkspace() {
     }
   }
   function choose(text: string) {
+    if (inFlight.current || audioActiveRef.current) return;
     setDraft(text);
     textarea.current?.focus();
-  }
-  async function transcribe(file?: File) {
-    if (!file || inFlight.current) return;
-    if (file.size > 2_000_000) {
-      setError('Usá un audio WAV mono de hasta 60 segundos y 2 MB.');
-      return;
-    }
-    inFlight.current = true;
-    setBusy(true);
-    setTranscribing(true);
-    setError('');
-    try {
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'audio/wav' },
-        body: file,
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'No se pudo transcribir el audio.');
-      setDraft((previous) => [previous, data.text].filter(Boolean).join('\n').slice(0, 2000));
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      inFlight.current = false;
-      setBusy(false);
-      setTranscribing(false);
-      if (audioInput.current) audioInput.current.value = '';
-      textarea.current?.focus();
-    }
   }
   return (
     <div className={`app-shell ${contextOpen ? '' : 'context-hidden'}`}>
@@ -317,16 +290,19 @@ export function CopilotWorkspace() {
                 </article>
               ))}
               {state.proposals.map((p) => (
-                <ProposalCard key={p.id} proposal={p} busy={busy} onDecide={onDecide} />
+                <ProposalCard
+                  key={p.id}
+                  proposal={p}
+                  busy={busy || audioActive}
+                  onDecide={onDecide}
+                />
               ))}
             </div>
           )}
           {busy ? (
             <div className="thinking" role="status">
               <LoaderCircle size={17} className="spinner" />
-              {transcribing
-                ? 'Transcribiendo audio con Meta…'
-                : 'Consultando contexto y validando la agenda…'}
+              Consultando contexto y validando la agenda…
             </div>
           ) : null}
           <div ref={bottom} />
@@ -338,71 +314,17 @@ export function CopilotWorkspace() {
               {!state ? <button onClick={() => void load()}>Reintentar conexión</button> : null}
             </div>
           ) : null}
-          <form
-            className={`composer${busy ? ' composer-busy' : ''}`}
-            onSubmit={send}
-            aria-busy={busy}
-          >
-            <label htmlFor="chat-draft" className="sr-only">
-              Mensaje al copiloto
-            </label>
-            <textarea
-              ref={textarea}
-              id="chat-draft"
-              value={draft}
-              maxLength={2000}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Preguntame algo o prepará una cita…"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  void send();
-                }
-              }}
-            />
-            <div className="composer-actions">
-              <input
-                ref={audioInput}
-                type="file"
-                accept="audio/wav,.wav"
-                className="sr-only"
-                aria-label="Seleccionar audio WAV ficticio"
-                onChange={(e) => void transcribe(e.target.files?.[0])}
-              />
-              <button
-                type="button"
-                className="composer-audio"
-                aria-label="Adjuntar audio WAV"
-                title="Audio ficticio: WAV mono, 16 kHz, 16 bits, máximo 60 s. Se envía a Meta para transcribir a un borrador editable."
-                disabled={busy || !state}
-                onClick={() => audioInput.current?.click()}
-              >
-                {transcribing ? (
-                  <LoaderCircle size={19} className="spinner" />
-                ) : (
-                  <AudioLines size={20} />
-                )}
-              </button>
-              <button
-                className="send-button"
-                type="submit"
-                aria-label="Enviar mensaje"
-                disabled={busy || !draft.trim() || !state}
-              >
-                {busy ? <LoaderCircle size={19} className="spinner" /> : <ArrowUp size={20} />}
-              </button>
-            </div>
-          </form>
-          <div className="composer-hint">
-            <span>
-              <Command size={12} /> Enter para enviar · Shift + Enter para nueva línea
-            </span>
-            <span>Audio a borrador</span>
-          </div>
-          <p className="composer-disclaimer">
-            <ShieldCheck size={12} />
-            Solo datos ficticios. Revisá cada propuesta antes de confirmar.
-          </p>
+          <ChatComposer
+            draft={draft}
+            onDraftChange={setDraft}
+            onSend={() => {
+              void send();
+            }}
+            disabled={busy || !state}
+            busy={busy}
+            onActivityChange={onAudioActivity}
+            textareaRef={textarea}
+          />
         </div>
       </main>
       {contextOpen && state ? (

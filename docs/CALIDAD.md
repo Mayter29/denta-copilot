@@ -27,3 +27,9 @@ Escaneo completo con la versión fijada: cero errores, siete avisos. No se desac
 | Creación de `Intl.DateTimeFormat` (1 aviso)           | Asignación repetida real, sin impacto medido. Considerar reutilizar el formateador si se toca la utilidad o aparece un coste demostrable.                                                                                                |
 
 Estos avisos previos permanecen visibles. No se usa una baseline para ocultarlos ni se amplía esta tarea documental a una refactorización de toda la aplicación. Las nuevas reglas guían los siguientes cambios y los problemas de seguridad/integridad introducidos por un cambio deben resolverse en ese mismo avance.
+
+## Avance con el dictado de micrófono
+
+Al implementar el dictado se extrajeron compositor, controles, ciclo de vida y acceso al dispositivo. El diagnóstico posterior conserva **cero errores y cuatro avisos** (tres recomendaciones de Zod y el formateador Intl). Desaparecieron los avisos de tamaño/complejidad del workspace y lectura HTTP de transcripción, sin silenciar reglas. La complejidad detectada durante el desarrollo del compositor nuevo también se resolvió separando controles y recuperación antes de cerrar el cambio.
+
+`pnpm check` aprobó 92 pruebas en 13 archivos, lint, tipos y build. Se añadieron Testing Library y happy-dom como dependencias de desarrollo fijadas para probar interacción React y limpieza/cancelación, además de las pruebas del AudioWorklet y del controlador. Ver [evidencia y límites del dictado](DICTADO.md).

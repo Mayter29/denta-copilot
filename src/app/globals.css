@@ -470,6 +470,57 @@ a {
 .composer-busy {
   background: #f5fbfc;
 }
+.composer-recording {
+  border-color: #c35a52;
+  box-shadow: 0 0 0 3px #c35a5212;
+}
+.composer-audio.is-recording {
+  background: #fff0ef;
+  color: var(--danger);
+  border-color: #edb3ad;
+}
+.dictation-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 9px 8px 0;
+  color: var(--accent-strong);
+  font-size: 11px;
+  min-height: 16px;
+}
+.dictation-status meter {
+  width: 64px;
+  height: 12px;
+}
+.dictation-caption {
+  font-size: 10px;
+  line-height: 1.5;
+  margin: 8px 8px 0;
+  color: var(--muted);
+}
+.dictation-retry,
+.dictation-review button {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.dictation-review {
+  margin: 8px 0;
+  font-size: 12px;
+}
+.dictation-review textarea {
+  display: block;
+  width: 100%;
+  height: 100px;
+  margin: 8px 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
 .composer textarea {
   border: 0;
   resize: none;

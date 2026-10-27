@@ -34,3 +34,9 @@ Identidad confirmada en Chrome (denta / dentacopilot). Clave publicable guardada
 - Sin despliegue, cambios remotos en Supabase ni migraciones. El repositorio sigue en `main`; contrato inicial enviado como `16fe351`.
 
 Ver [contrato, comandos, presupuesto y límites](EVALUACIONES.md). Las pruebas simuladas no miden la calidad lingüística del modelo ni RLS. Tres casos con Meta son una validación inicial de integración, no una evaluación general de robustez. Los IDs/versiones de fuentes verifican procedencia; no certifican cada afirmación del texto.
+
+## Avance de micrófono a borrador
+
+`pnpm check`: lint, tipos, **92 pruebas** en 13 archivos y build aprobados. React Doctor: cero errores y cuatro avisos previos; sin supresiones nuevas. Se probó la transcripción con Meta real de un WAV sintético ficticio de 4,335 s pasado por el codificador del dictado; HTTP 200, sin cambios en mensajes, propuestas, agenda ni auditoría.
+
+En el navegador se comprobaron el botón, espera de permiso, cancelación y recuperación del campo. Los casos de captura satisfactoria, interrupción, reintento y respuestas tardías cuentan con pruebas simuladas. La validación con un micrófono físico, permiso concedido y voces/dispositivos del piloto sigue pendiente. Detalle, privacidad y pasos manuales en [DICTADO.md](DICTADO.md). No se desplegó ni se modificó Supabase.

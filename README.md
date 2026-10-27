@@ -28,7 +28,7 @@ Abrir [la demo local](http://127.0.0.1:3420). El proceso escucha únicamente en 
 - Propuestas guardadas por servidor; solo un clic de confirmación ejecuta el cambio.
 - Horarios, duración, choques, vencimiento, control de versión, confirmación idempotente y auditoría.
 - Agenda visible y fuentes ficticias de conocimiento con recuperación léxica.
-- Audio WAV mono, PCM 16 bits, 16 kHz, hasta 60 s / 2 MB, transcrito por Muse Voice Transcribe a un borrador editable. No se envía automáticamente al agente.
+- Micrófono con permiso explícito: grabar, detener y transcribir con Muse Voice Transcribe a un borrador editable. Cancelación, reintento y límite de 60 s; no se envía automáticamente al chat. Ver [flujo y límites del dictado](docs/DICTADO.md).
 - Datos de cada sesión en `work/sessions`, separados con cookie firmada HttpOnly. Persisten recargas y reinicios del proceso local.
 
 El chat espera la respuesta completa; todavía no transmite tokens progresivamente. La conexión al Supabase exclusivo de este proyecto está configurada y verificada; la agenda y el chat aún usan archivos locales. WhatsApp, servidor MCP y voz en vivo siguen pendientes. La persistencia local es para un único proceso y datos ficticios. No es el almacenamiento de producción.
@@ -41,7 +41,7 @@ Supabase está fijado a `lyphdzeazqnaepyzzisi` para impedir conexiones accidenta
 2. «Buscá espacios mañana para una valoración con la Dra. Valeria».
 3. Elegir una hora disponible y pedir reservar para una persona ficticia.
 4. Confirmar la tarjeta y verificar la agenda. Pedir reagendar y luego cancelar.
-5. Adjuntar un WAV inventado con el clip, corregir el borrador y enviar.
+5. Tocar el micrófono, dictar una solicitud ficticia, detener, corregir el borrador y enviar.
 
 ```powershell
 pnpm check
