@@ -1,6 +1,5 @@
-import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { createSecretary } from '@/lib/server/agent';
+import { runSecretary } from '@/lib/server/agent';
 import {
   apiError,
   boundedJson,
@@ -21,22 +20,9 @@ export async function POST(request: Request) {
     return await withWorkspace(id, async (state) => {
       if (state.messages.length >= 80)
         throw new RequestError('Alcanzaste el límite de esta sesión de demo.', 429);
-      const agent = createSecretary(state);
-      const result = await agent.generate({
-        messages: [
-          ...state.messages.slice(-18).map((m) => ({ role: m.role, content: m.content })),
-          { role: 'user', content: parsed.data.text },
-        ],
+      await runSecretary(state, parsed.data.text, {
         abortSignal: AbortSignal.any([request.signal, AbortSignal.timeout(55_000)]),
       });
-      state.messages.push(
-        { id: randomUUID(), role: 'user', content: parsed.data.text },
-        {
-          id: randomUUID(),
-          role: 'assistant',
-          content: result.text || 'Revisá las propuestas de acción que aparecen abajo.',
-        },
-      );
       return Response.json({
         messages: state.messages,
         proposals: state.proposals,

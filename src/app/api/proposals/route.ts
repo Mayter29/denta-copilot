@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { executionReceipt } from '@/lib/domain/results';
 import { decide } from '@/lib/domain/agenda';
 import {
   apiError,
@@ -17,6 +18,7 @@ export async function POST(request: Request) {
     return await withWorkspace(await sessionId(), (state) => {
       decide(state, parsed.data.id, parsed.data.approved);
       return Response.json({
+        receipt: executionReceipt(state, parsed.data.id),
         messages: state.messages,
         appointments: state.appointments,
         proposals: state.proposals,

@@ -41,6 +41,18 @@ export function ProposalCard({
           </dd>
         </div>
       </dl>
+      {proposal.receipt ? (
+        <details>
+          <summary>Comprobante de ejecución</summary>
+          <p className="small">
+            Cita: {proposal.receipt.appointment.id} · Estado: {proposal.receipt.appointment.status}{' '}
+            · Versión: {proposal.receipt.appointment.version}
+          </p>
+          <p className="small">
+            Confirmación: {proposal.receipt.proposalId} · {proposal.receipt.at}
+          </p>
+        </details>
+      ) : null}
       {proposal.status === 'pending' ? (
         <>
           <p className="muted small">

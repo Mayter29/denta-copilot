@@ -300,7 +300,29 @@ export function CopilotWorkspace() {
                       {message.role === 'assistant' ? 'Denta Copilot' : 'Vos'}
                     </span>
                     <div className="message-content">
+                      {message.result ? (
+                        <p>
+                          <strong>
+                            {message.result.kind === 'proposal'
+                              ? 'Pendiente de confirmación'
+                              : message.result.kind === 'needs_input'
+                                ? 'Necesita información'
+                                : message.result.kind === 'paused'
+                                  ? 'Turno pausado'
+                                  : message.result.kind === 'failed'
+                                    ? 'Verificación fallida'
+                                    : 'Respuesta informativa'}
+                          </strong>{' '}
+                          · Sin cambios de agenda en este turno
+                        </p>
+                      ) : null}
                       <Markdown>{message.content}</Markdown>
+                      {message.result?.sources.map((source) => (
+                        <details key={source.id}>
+                          <summary>Fuente recuperada: {source.title}</summary>
+                          <p>{source.content}</p>
+                        </details>
+                      ))}
                     </div>
                   </div>
                 </article>

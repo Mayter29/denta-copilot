@@ -1,3 +1,4 @@
+import type { VerifiedResult } from './results';
 export type Appointment = {
   id: string;
   patient: string;
@@ -25,8 +26,22 @@ export type Proposal = {
   createdAt: number;
   status: 'pending' | 'confirmed' | 'rejected' | 'expired';
   resultId?: string;
+  receipt?: {
+    kind: 'executed';
+    proposalId: string;
+    action: string;
+    at: string;
+    appointment: Appointment;
+  };
 };
-export type ChatEntry = { id: string; role: 'user' | 'assistant'; content: string };
+export type ChatEntry = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  result?: VerifiedResult;
+  runId?: string;
+  promptVersion?: string;
+};
 export type Workspace = {
   appointments: Appointment[];
   proposals: Proposal[];

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { clinicToday, doctors, services, type Change, type Workspace } from './types';
+import { clinicToday, doctors, services, type Change, type Proposal, type Workspace } from './types';
 
 export class DomainError extends Error {}
 const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
@@ -76,7 +76,7 @@ export function validateSlot(state: Workspace, change: Change, now = new Date())
     throw new DomainError('Ese espacio ya está ocupado. Busquemos otra hora.');
   return service;
 }
-export function propose(state: Workspace, change: Change, now = new Date()) {
+export function propose(state: Workspace, change: Change, now = new Date()): Proposal {
   if (!change.patient.trim() || change.patient.length > 120)
     throw new DomainError('Ingresá un nombre ficticio válido.');
   const original = change.appointmentId
@@ -173,6 +173,13 @@ export function decide(state: Workspace, id: string, approved: boolean, now = ne
     appointmentId: proposal.resultId!,
     at: now.toISOString(),
   });
+  proposal.receipt = {
+    kind: 'executed',
+    proposalId: proposal.id,
+    action: change.action,
+    at: now.toISOString(),
+    appointment: structuredClone(state.appointments.find((a) => a.id === proposal.resultId)!),
+  };
   return proposal;
 }
 export function availableSlots(
