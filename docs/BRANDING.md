@@ -4,21 +4,19 @@ Fecha: 27 de octubre de 2026. Estado: identidad integrada en la pantalla princip
 
 ## Hallazgos
 
-Los vectores de Dentary sí están guardados en Git. El remoto usa `master`, no `main`. Después de actualizar las referencias, se encontraron en `origin/master:public/dentary/`. El commit que introdujo los vectores es `840b4fb7b65e9e5e22fa67b304534af410c1f581` del 10 de octubre. La referencia remota revisada fue `6462647bbdaab6c0e4e251fb9f1ff30e3ec42867`.
+Los vectores de Dentary y la mascota Denta son activos previos de quien presenta el proyecto. Se copiaron a este repositorio para la demo y se conservan en `public/brand`. No se documentan rutas de la máquina de desarrollo ni ramas de otros repositorios.
 
-La carpeta local de Odontoser estaba en `codex/dentary-ai-v1`; allí todavía no aparecen los SVG de Dentary, aunque sí los PNG y los SVG de Odontoser. No se cambió de rama ni se modificaron sus archivos de trabajo. También hay una copia del paquete de logos en `C:\Users\mayte\Downloads\dentary\dentary-logo`.
-
-La mascota correcta fue confirmada por el usuario: `C:\Users\mayte\Downloads\denta-v1\denta-v1\v2`. No se encontró integrada en el árbol local ni en `origin/master` de Odontoser. El paquete trae 47 SVG y un componente React `DentaMascot.tsx`, además del generador y una lámina HTML.
+El paquete de la mascota incluye varias expresiones y un componente React. Aquí se adaptó a los tokens y CSS Modules de esta aplicación, sin cambiar la geometría.
 
 ## Qué se recuperó en este repositorio
 
-| Destino                                             | Origen                                              | Uso                                                             |
-| --------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------- |
-| `public/brand/dentary/dentary-icon.svg`             | `origin/master:public/dentary/dentary-icon.svg`     | Símbolo de la marca                                             |
-| `public/brand/dentary/dentary-horizontal-light.svg` | Mismo path bajo `public/dentary` en `origin/master` | Wordmark sobre fondo claro                                      |
-| `public/brand/dentary/dentary-horizontal-dark.svg`  | Mismo path bajo `public/dentary` en `origin/master` | Wordmark sobre fondo oscuro                                     |
-| `public/brand/denta/denta-*.svg`                    | `v2/svg` del paquete confirmado                     | Seis expresiones originales, archivos conservados sin modificar |
-| `src/components/brand/DentaMascot.tsx`              | `v2/DentaMascot.tsx` del paquete confirmado         | Componente adaptado a los tokens y CSS Modules de este proyecto |
+| Destino                                             | Origen                                           | Uso                                                             |
+| --------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------- |
+| `public/brand/dentary/dentary-icon.svg`             | Paquete de marca Dentary previo                  | Símbolo de la marca                                             |
+| `public/brand/dentary/dentary-horizontal-light.svg` | Mismo paquete                                    | Wordmark sobre fondo claro                                      |
+| `public/brand/dentary/dentary-horizontal-dark.svg`  | Mismo paquete                                    | Wordmark sobre fondo oscuro                                     |
+| `public/brand/denta/denta-*.svg`                    | Paquete de mascota confirmado por quien presenta | Seis expresiones originales, archivos conservados sin modificar |
+| `src/components/brand/DentaMascot.tsx`              | Componente del mismo paquete                     | Adaptado a los tokens y CSS Modules de este proyecto            |
 
 Se conservó la geometría V2, sus poses y trazos reforzados para tamaños menores a 40 px. Se extrajeron las animaciones a CSS Modules, se sustituyeron las clases Tailwind del proyecto anterior por `--accent` y se mantuvo `prefers-reduced-motion`. Los dibujos decorativos se ocultan de lectores de pantalla; el mensaje contiguo comunica el estado.
 

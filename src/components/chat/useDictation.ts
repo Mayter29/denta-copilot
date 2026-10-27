@@ -53,7 +53,7 @@ export function useDictation({ onTranscript, onActivityChange }: Options) {
       else
         transition(
           'review',
-          'El texto no cabe junto al borrador actual. Copialo o elegí usarlo como nuevo borrador.',
+          'The transcript does not fit with the current draft. Copy it or replace the draft.',
           text,
         );
     } catch (error) {
@@ -61,10 +61,10 @@ export function useDictation({ onTranscript, onActivityChange }: Options) {
       transition(
         'retry',
         error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name)
-          ? 'La transcripción tardó demasiado. Podés reintentar con el audio conservado.'
+          ? 'Transcription took too long. You can retry with the saved audio.'
           : error instanceof Error
             ? error.message
-            : 'No se pudo transcribir el audio.',
+            : 'The audio could not be transcribed.',
       );
     } finally {
       if (request.current === controller) request.current = null;
@@ -106,7 +106,7 @@ export function useDictation({ onTranscript, onActivityChange }: Options) {
           capture.current = null;
           transition(
             'idle',
-            'La grabación se interrumpió y fue descartada. Volvé a grabar cuando estés lista.',
+            'Recording was interrupted and discarded. Record again when you are ready.',
           );
         }
       },

@@ -2,7 +2,7 @@ import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { cookies } from 'next/headers';
-import { DomainError, seedWorkspace } from '../domain/agenda';
+import { DomainError, normalizeWorkspace, seedWorkspace } from '../domain/agenda';
 import type { Workspace } from '../domain/types';
 
 export class RequestError extends Error {
@@ -16,14 +16,14 @@ export class RequestError extends Error {
 export function guardLocal(request: Request, mutation = false) {
   const host = request.headers.get('host') ?? '';
   if (process.env.DEMO_MODE !== 'true' || !/^(127\.0\.0\.1|localhost):3420$/.test(host))
-    throw new RequestError('Esta demo solo está habilitada en localhost:3420.', 403);
+    throw new RequestError('This demo only runs on localhost:3420.', 403);
   if (mutation && request.headers.get('origin') !== `http://${host}`)
-    throw new RequestError('Origen inválido.', 403);
+    throw new RequestError('Invalid origin.', 403);
 }
 function signature(id: string) {
   const secret = process.env.DEMO_SESSION_SECRET;
   if (!secret || secret.length < 32)
-    throw new RequestError('Configurá DEMO_SESSION_SECRET con al menos 32 caracteres.', 503);
+    throw new RequestError('Set DEMO_SESSION_SECRET to at least 32 characters.', 503);
   return createHmac('sha256', secret).update(id).digest('hex');
 }
 export async function sessionId(create = false) {
@@ -36,7 +36,7 @@ export async function sessionId(create = false) {
       if (timingSafeEqual(Buffer.from(mac), Buffer.from(expected))) return id;
     }
   }
-  if (!create) throw new RequestError('Abrí la demo para crear tu sesión.', 401);
+  if (!create) throw new RequestError('Open the demo to start a session.', 401);
   const id = randomUUID();
   jar.set('denta-demo', `${id}.${signature(id)}`, {
     httpOnly: true,
@@ -55,7 +55,7 @@ export async function withWorkspace<T>(
   id: string,
   fn: (state: Workspace) => T | Promise<T>,
 ): Promise<T> {
-  if (!/^[0-9a-f-]{36}$/.test(id)) throw new RequestError('Sesión inválida.', 401);
+  if (!/^[0-9a-f-]{36}$/.test(id)) throw new RequestError('Invalid session.', 401);
   const previous = locks.get(id) ?? Promise.resolve();
   const current = previous
     .catch(() => {})
@@ -65,7 +65,7 @@ export async function withWorkspace<T>(
       const file = path.join(directory, `${id}.json`);
       let state: Workspace;
       try {
-        state = JSON.parse(await readFile(file, 'utf8')) as Workspace;
+        state = normalizeWorkspace(JSON.parse(await readFile(file, 'utf8')) as Workspace);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
         state = seedWorkspace();
@@ -85,7 +85,7 @@ export async function withWorkspace<T>(
 }
 export async function boundedJson(request: Request) {
   const reader = request.body?.getReader();
-  if (!reader) throw new RequestError('Solicitud vacía.');
+  if (!reader) throw new RequestError('Empty request.');
   const chunks: Uint8Array[] = [];
   let size = 0;
   while (true) {
@@ -94,14 +94,14 @@ export async function boundedJson(request: Request) {
     size += next.value.byteLength;
     if (size > 16_384) {
       await reader.cancel();
-      throw new RequestError('Solicitud demasiado grande.', 413);
+      throw new RequestError('Request is too large.', 413);
     }
     chunks.push(next.value);
   }
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
   } catch {
-    throw new RequestError('Solicitud inválida.');
+    throw new RequestError('Invalid request.');
   }
 }
 export function apiError(error: unknown) {
@@ -110,7 +110,7 @@ export function apiError(error: unknown) {
   if (error instanceof DomainError) return Response.json({ error: error.message }, { status: 409 });
   // Provider errors may contain requests/headers: never serialize or log them.
   return Response.json(
-    { error: 'No se pudo completar la operación. Revisá la conexión y volvé a intentar.' },
+    { error: 'The operation could not be completed. Check the connection and try again.' },
     { status: 502 },
   );
 }

@@ -6,9 +6,9 @@ export async function POST(request: Request) {
     guardLocal(request, true);
     await sessionId();
     const apiKey = process.env.META_API_KEY || process.env.MODEL_API_KEY;
-    if (!apiKey) throw new RequestError('Falta configurar la clave de Meta.', 503);
+    if (!apiKey) throw new RequestError('Set META_API_KEY before transcribing.', 503);
     const reader = request.body?.getReader();
-    if (!reader) throw new RequestError('Adjuntá un audio WAV.');
+    if (!reader) throw new RequestError('Attach a WAV recording.');
     const chunks: Uint8Array[] = [];
     let bytes = 0;
     while (true) {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       bytes += part.value.byteLength;
       if (bytes > 2_000_000) {
         await reader.cancel();
-        throw new RequestError('El audio supera el límite de 2 MB.', 413);
+        throw new RequestError('Audio is larger than the 2 MB limit.', 413);
       }
       chunks.push(part.value);
     }
@@ -50,11 +50,11 @@ export async function POST(request: Request) {
     });
     if (!response.ok)
       throw new RequestError(
-        'Meta no pudo transcribir el audio. Revisá el formato e intentá nuevamente.',
+        'Meta could not transcribe the audio. Check the format and try again.',
         502,
       );
     const text = (await response.text()).trim().slice(0, 2000);
-    if (!text) throw new RequestError('No se detectó texto en el audio.');
+    if (!text) throw new RequestError('No speech was detected in the audio.');
     // Audio stays in memory for this request; never persisted or written to logs.
     return Response.json({ text });
   } catch (error) {

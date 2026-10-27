@@ -6,20 +6,19 @@ import { useDictation, type DictationPhase } from './useDictation';
 import { DictationControls, DictationFeedback } from './DictationControls';
 
 const labels: Record<DictationPhase, string> = {
-  idle: 'Dictado a borrador · hasta 60 s',
-  requesting: 'Esperando permiso del micrófono…',
-  recording: 'Grabando en este dispositivo',
-  stopping: 'Preparando el audio…',
-  transcribing: 'Transcribiendo con Meta…',
-  retry: 'Audio pendiente de transcripción',
-  review: 'Revisá la transcripción',
+  idle: 'Dictation to draft · up to 60 s',
+  requesting: 'Waiting for microphone permission…',
+  recording: 'Recording on this device',
+  stopping: 'Preparing the audio…',
+  transcribing: 'Transcribing with Meta…',
+  retry: 'Audio waiting to be transcribed',
+  review: 'Review the transcript',
 };
 const disclosures: Partial<Record<DictationPhase, string>> = {
-  transcribing:
-    'Audio enviado a Meta. Cancelar detiene la espera e impide añadir texto al borrador.',
+  transcribing: 'Audio was sent to Meta. Cancel stops the wait and does not add text to the draft.',
   retry:
-    'El audio ya se envió a Meta. Reintentar vuelve a enviarlo; descartarlo lo elimina de esta sesión.',
-  review: 'Texto transcrito. Elegí cómo incorporarlo al borrador.',
+    'The audio was already sent to Meta. Retry sends it again. Discard removes it from this session.',
+  review: 'Transcribed text. Choose how to add it to the draft.',
 };
 type Props = {
   draft: string;
@@ -73,7 +72,7 @@ export function ChatComposer({
         aria-busy={busy || pending}
       >
         <label htmlFor="chat-draft" className="sr-only">
-          Mensaje al copiloto
+          Message to Denta
         </label>
         <textarea
           ref={textareaRef}
@@ -82,7 +81,7 @@ export function ChatComposer({
           maxLength={2000}
           disabled={disabled || active}
           onChange={(event) => onDraftChange(event.target.value)}
-          placeholder="Preguntame algo o prepará una cita…"
+          placeholder="Ask Denta to check the book or draft a follow-up…"
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault();
@@ -95,7 +94,7 @@ export function ChatComposer({
           <button
             className="send-button"
             type="submit"
-            aria-label="Enviar mensaje"
+            aria-label="Send message"
             disabled={disabled || active || !draft.trim()}
           >
             {busy ? <LoaderCircle size={19} className="spinner" /> : <ArrowUp size={20} />}
@@ -109,23 +108,23 @@ export function ChatComposer({
         {recording ? (
           <>
             <span aria-hidden="true"> · {String(dictation.seconds).padStart(2, '0')} / 60 s</span>
-            <meter aria-label="Nivel del micrófono" min={0} max={1} value={dictation.level} />
+            <meter aria-label="Microphone level" min={0} max={1} value={dictation.level} />
           </>
         ) : null}
       </div>
       <div className="composer-hint">
         <span>
-          <Command size={12} /> Enter para enviar · Shift + Enter para nueva línea
+          <Command size={12} /> Enter to send · Shift + Enter for a new line
         </span>
         <span>{draft.length}/2000</span>
       </div>
       <p className="dictation-caption">
         {disclosures[dictation.phase] ??
-          'Al detener, o a los 60 s, se envía a Meta. Cancelá antes para no enviarlo.'}
+          'Stopping, or reaching 60 s, sends audio to Meta. Cancel before that to keep it here.'}
       </p>
       <p className="composer-disclaimer">
         <ShieldCheck size={12} />
-        Solo datos ficticios. Revisá el texto antes de enviarlo y confirmá cada cambio.
+        Fictional data only. Review the draft before sending, and confirm every change.
       </p>
     </>
   );

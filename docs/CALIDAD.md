@@ -1,12 +1,12 @@
 # Calidad y diagnóstico React
 
-Las reglas del proyecto viven en [AGENTS.md](../AGENTS.md). Para una revisión o refactor significativo está disponible la skill local [denta-quality](../.agents/skills/denta-quality/SKILL.md), con redacción propia adaptada conceptualmente de las skills de React, composición y rendimiento consultadas en Odontoser. No se copiaron código de producto, conexiones ni documentos internos.
+Las reglas del proyecto viven en [AGENTS.md](../AGENTS.md). Para una revisión o refactor significativo está disponible la skill local [denta-quality](../.agents/skills/denta-quality/SKILL.md), con redacción propia. Se consultaron skills públicas de React, composición y rendimiento. No se copiaron código de producto, conexiones ni documentos internos.
 
 ## Comandos reproducibles
 
 ```powershell
 pnpm check
-pnpm react:doctor
+pnpm run doctor
 ```
 
 `check` mantiene lint, tipos, tests y build. React Doctor es un diagnóstico adicional separado: no añade hooks, servicios, CI ni un umbral de puntuación. Se fija `react-doctor@0.9.18` como dependencia de desarrollo y el lockfile conserva su resolución. Revisar `pnpm exec react-doctor --help` antes de cambiar opciones o actualizar versión.

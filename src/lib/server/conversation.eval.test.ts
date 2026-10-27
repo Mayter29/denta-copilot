@@ -62,7 +62,7 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
       { model, now },
     );
     expect(result.kind).toBe('proposal');
-    expect(result.text).toContain('pendiente');
+    expect(result.text).toContain('Pending confirmation');
     expect(result.proposals[0].change).toEqual({ action: 'book', ...booking });
     expect(state.appointments).toHaveLength(3);
     expect(state.audit).toEqual([]);
@@ -117,7 +117,7 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
     const model = scriptedModel([
       { toolName: 'proposeBooking', input: { ...booking, date: '2026-10-27', time: '09:30' } },
       (prompt) => {
-        expect(toolOutput<{ error: string }>(prompt, 'proposeBooking').error).toContain('ocupado');
+        expect(toolOutput<{ error: string }>(prompt, 'proposeBooking').error).toContain('taken');
         return final('answer', 'Ese espacio está ocupado.');
       },
     ]);
@@ -235,6 +235,40 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
     expect(state.proposals).toEqual([]);
   });
 
+  it('seguimiento: el chat no envía y un clic registra un solo mensaje', async () => {
+    const state = seedWorkspace('2026-10-27');
+    const message = 'Hola Luis, te escribimos para confirmar tu cita de las 10:30.';
+    const before = state.patientMessages.length;
+    const result = await runSecretary(state, 'Draft a Spanish follow-up for Luis.', {
+      model: scriptedModel([
+        { toolName: 'listFollowUps', input: {} },
+        { toolName: 'proposeFollowUp', input: { appointmentId: 'demo-luis', message } },
+        (prompt) =>
+          final('proposal', 'Sent', [], [toolOutput<Proposal>(prompt, 'proposeFollowUp').id]),
+      ]),
+      now,
+    });
+    expect(result.kind).toBe('proposal');
+    expect(result.proposals[0].change).toMatchObject({
+      action: 'follow_up',
+      appointmentId: 'demo-luis',
+      note: message,
+    });
+    expect(state.patientMessages).toHaveLength(before);
+    expect(state.audit).toEqual([]);
+    await runSecretary(state, 'Yes, send it', {
+      model: scriptedModel([final('needs_input', 'Confirm the card with a click.')]),
+      now,
+    });
+    expect(state.patientMessages).toHaveLength(before);
+    expect(state.proposals[0].status).toBe('pending');
+    decide(state, result.proposals[0].id, true, now);
+    decide(state, result.proposals[0].id, true, now);
+    expect(state.patientMessages.filter((m) => m.body === message)).toHaveLength(1);
+    expect(state.audit).toHaveLength(1);
+    expect(state.appointments.find((a) => a.id === 'demo-luis')?.time).toBe('10:30');
+  });
+
   it('ID de otra sesión no genera una propuesta válida', async () => {
     const foreign = seedWorkspace('2026-10-27');
     const p = propose(foreign, { action: 'book', ...booking }, now);
@@ -244,7 +278,7 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
       now,
     });
     expect(result.kind).toBe('failed');
-    expect(() => decide(state, p.id, true, now)).toThrow('sesión');
+    expect(() => decide(state, p.id, true, now)).toThrow('session');
     expect(state.audit).toEqual([]);
   });
 

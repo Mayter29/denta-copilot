@@ -2,13 +2,13 @@
 
 Este registro distingue antecedentes de trabajo creado el 27 de octubre de 2026. No convierte automáticamente código privado en material autorizado para una entrega pública.
 
-| Fuente revisada                                                       | Qué aporta                                                       | Qué se incorporó                                                                                                                   |
-| --------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Dentary/Odontoser: `DESIGN.md` y `src/app/globals.css`                | Paleta turquesa, superficies, texto y bordes semánticos          | Valores de paleta adaptados en un CSS nuevo. No se copió el dashboard ni sus pantallas                                             |
-| Dentary: `src/lib/appointments/slotEvaluation.ts` y `availability.ts` | Decisión del servidor, horarios, duración y choques              | Reglas nuevas simplificadas para una demo de dos profesionales; no se copió lógica dependiente de la BD real                       |
-| EVA/ECP: `ProposalCard.tsx`, ADR-0073                                 | Tarjetas controladas por servidor y audio que vuelve al borrador | Implementación nueva del patrón de confirmación. No se copiaron código, mascota, componentes HeroUI ni prompts corporativos        |
-| Istmo Insight: README de la rama development y lista de ramas         | Separación de gateway, memoria, contexto, herramientas y scopes  | Referencia conceptual. No se copiaron código, prompts, configuración, documentos internos ni activos. El README indica uso interno |
-| Reglas oficiales del hackathon                                        | Trabajo nuevo identificable y demo verificable                   | Alcance orientado a operaciones administrativas                                                                                    |
+| Fuente revisada                               | Qué aporta                                                       | Qué se incorporó                                                                                    |
+| --------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Diseño previo de Dentary                      | Paleta turquesa, superficies, texto y bordes semánticos          | Valores de paleta adaptados en un CSS nuevo. No se copió el dashboard ni sus pantallas              |
+| Reglas de agenda de un producto dental previo | Decisión del servidor, horarios, duración y choques              | Reglas nuevas simplificadas para una demo de dos profesionales; no se copió lógica de una base real |
+| Patrón previo de tarjetas de confirmación     | Tarjetas controladas por servidor y audio que vuelve al borrador | Implementación nueva. No se copiaron código, mascota, componentes ni prompts de otros productos     |
+| Notas previas de arquitectura de agentes      | Separación de gateway, memoria, contexto, herramientas y scopes  | Referencia conceptual. No se copiaron código, prompts, configuración ni activos                     |
+| Reglas oficiales del hackathon                | Trabajo nuevo identificable y demo verificable                   | Alcance orientado a operaciones administrativas                                                     |
 
 ## Trabajo nuevo de este proyecto
 
@@ -18,14 +18,14 @@ Scaffolding, interfaz de Denta Copilot, semilla ficticia, dominio de agenda, val
 
 ## Límites de la reutilización
 
-Compositor actualizado: se tomó la captura aportada por la usuaria y se consultó el patrón visual de la barra de EVA como referencia. Se escribió CSS/JSX propio con la paleta Dentary y los iconos Lucide ya instalados. No se incorporaron código ni activos de EVA; se conserva audio WAV a borrador, sin añadir voz en vivo.
+Compositor actualizado: se tomó la captura aportada por la usuaria y se consultó un patrón visual de barra como referencia. Se escribió CSS/JSX propio con la paleta Dentary y los iconos Lucide ya instalados. No se incorporaron código ni activos de otros productos; se conserva audio WAV a borrador, sin añadir voz en vivo.
 
-Dictado desde micrófono: controlador Web Audio, AudioWorklet, codificador PCM, hook de ciclo de vida y compositor extraído son implementaciones nuevas de este repositorio. Se reutiliza su endpoint WAV; no se copió la captura de voz de EVA ni se añaden conexiones externas de otros proyectos.
+Dictado desde micrófono: controlador Web Audio, AudioWorklet, codificador PCM, hook de ciclo de vida y compositor extraído son implementaciones nuevas de este repositorio. Se reutiliza su endpoint WAV; no se copió la captura de voz de otro producto ni se añaden conexiones externas.
 
 Actualización de marca: los SVG originales de Dentary y la mascota Denta V2 del paquete confirmado por el usuario están en `public/brand` y en `/brand-review`; son activos preexistentes de su autoría. Ya se integran en la aplicación principal: logo/isotipo Dentary, favicon y avatar Denta en cabecera y mensajes. Ver [inventario e integración](BRANDING.md).
 
 No se importaron datos reales de pacientes, empleados, clínicas, contactos o agendas. No se copiaron `.env`, secretos, credenciales ni conexiones de otros proyectos. El único secreto de proveedor configurado es la clave Meta indicada por la participante en `.env.local`, excluida de Git.
 
-Dentary es la referencia de producto y diseño indicada por la participante; su diseño preexistente debe declararse en la entrega y comprobarse frente a las reglas del evento. Las referencias de EVA e Istmo se mantienen conceptuales porque son proyectos privados. La licencia de las dependencias de terceros sigue aplicando; no se asigna una licencia pública a código corporativo.
+Dentary es la referencia de producto y diseño indicada por la participante; su diseño preexistente debe declararse en la entrega y comprobarse frente a las reglas del evento. Otras referencias de arquitectura se mantienen conceptuales porque pertenecen a proyectos privados y no se nombran aquí. La licencia de las dependencias de terceros sigue aplicando; no se asigna una licencia pública a código de otros productos.
 
 Antes de la entrega: verificar visibilidad pública, aportes del equipo, licencias/avisos de dependencias y correspondencia exacta entre video y capacidades nuevas.

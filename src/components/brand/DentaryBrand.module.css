@@ -27,8 +27,13 @@
   letter-spacing: 1px;
 }
 .header > .icon {
-  width: 25px;
-  height: 25px;
+  width: 32px;
+  height: 32px;
+}
+@media (max-width: 720px) {
+  .header .wordmark img {
+    display: none;
+  }
 }
 .product {
   font-size: 12px;

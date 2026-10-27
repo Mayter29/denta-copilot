@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import './globals.css';
 export const metadata: Metadata = {
-  title: 'Denta Copilot · Dentary',
+  title: 'Denta · Dentary',
   icons: { icon: { url: '/brand/dentary/dentary-icon.svg', type: 'image/svg+xml' } },
-  description: 'Copiloto operativo para clínicas dentales. Demostración con datos ficticios.',
+  description: 'Denta helps a fictional dental clinic confirm, move, and follow up on visits.',
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es">
+    <html lang="en">
       <body>{children}</body>
     </html>
   );

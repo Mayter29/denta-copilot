@@ -8,9 +8,9 @@ export function DentaAvatar({ busy }: { busy: boolean }) {
     <button
       type="button"
       className="copilot-avatar"
-      aria-label="Animación de Denta"
+      aria-label={animated ? 'Pause Denta animation' : 'Play Denta animation'}
       aria-pressed={animated}
-      title={animated ? 'Pausar animación de Denta' : 'Reanudar animación de Denta'}
+      title={animated ? 'Pause Denta animation' : 'Play Denta animation'}
       onClick={() => setAnimated((value) => !value)}
     >
       <DentaMascot

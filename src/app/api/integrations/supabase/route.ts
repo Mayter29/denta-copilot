@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   try {
     guardLocal(request);
     if (!(await checkSupabaseConnection())) {
-      throw new RequestError('No se pudo verificar la conexión al Supabase de Denta Copilot.', 503);
+      throw new RequestError('Could not verify the Supabase connection for Denta.', 503);
     }
     return Response.json(
       {
