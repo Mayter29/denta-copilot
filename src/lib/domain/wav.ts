@@ -28,7 +28,7 @@ export function wavDuration(buffer: Buffer) {
     if (tag === 'data') dataBytes += length;
     offset = begin + length + (length % 2);
   }
-  if (!byteRate || !dataBytes || dataBytes / byteRate > 60)
+  if (!byteRate || dataBytes / byteRate < 1 || dataBytes / byteRate > 60)
     throw new Error('El audio debe durar entre 1 y 60 segundos.');
   return dataBytes / byteRate;
 }

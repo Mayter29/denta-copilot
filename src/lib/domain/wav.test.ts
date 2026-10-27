@@ -21,6 +21,7 @@ it('acepta PCM mono 16 kHz hasta 60 segundos', () => {
 });
 it('rechaza duración excesiva, formato inválido y archivo truncado', () => {
   expect(() => wavDuration(wav(61))).toThrow();
+  expect(() => wavDuration(wav(0.5))).toThrow();
   const stereo = wav(1);
   stereo.writeUInt16LE(2, 22);
   expect(() => wavDuration(stereo)).toThrow();
