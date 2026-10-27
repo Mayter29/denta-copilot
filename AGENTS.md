@@ -1,15 +1,15 @@
 # Denta Copilot — guía del proyecto
 
-- Ubicación de trabajo: P:\denta-copilot. Package manager: pnpm.
-- Demo administrativa con datos inventados. Nunca conectar la BD de Dentary/ECP.
+- Package manager: pnpm. El asistente se llama Denta.
+- Demo administrativa con datos inventados. Nunca conectar la base de datos de otro producto.
 - Leer docs/PLAN-V1.md y docs/REUTILIZACION.md antes de ampliar alcance.
 - Credenciales solo servidor, .env.local ignorado; nunca imprimir ni copiar secretos a docs.
 - Solo herramientas de lectura/propuesta para el modelo. Confirmación por endpoint y clic humano.
 - Validar horarios, conflictos, versión e idempotencia al ejecutar, no solo al proponer.
 - Persistencia local: un proceso, loopback:3420, cookie firmada, carpetas work/sessions.
 - Para Supabase: proyecto nuevo, Auth, RLS y transacciones antes de publicar; no asumir aislamiento por filtros.
-- Supabase exclusivo: `lyphdzeazqnaepyzzisi` (denta / dentacopilot). Leer `docs/SUPABASE.md`. Todo cliente pasa por `getSupabaseConfig`; nunca sustituirlo por un proyecto de Dentary/ECP.
-- No copiar código corporativo ni activos de EVA/Insight a este repositorio público.
+- Supabase exclusivo: `lyphdzeazqnaepyzzisi` (denta / dentacopilot). Leer `docs/SUPABASE.md`. Todo cliente pasa por `getSupabaseConfig`; nunca sustituirlo por otro proyecto.
+- No copiar código ni activos privados de otros productos a este repositorio público.
 - Verificar API del SDK/Next en node_modules de la versión instalada.
 - Calidad: pnpm check. Reportar local/publicado y límites de verificación.
 
@@ -26,7 +26,7 @@
 ### Validación proporcional
 
 - Durante cambios de texto/estilo: revisión de diff y comprobación visual si afecta UI. Durante cambios de lógica: tipos/lint y pruebas relevantes. Antes de commit/push con código o configuración ejecutable: `pnpm check`.
-- Al cambiar componentes/hooks o revisar arquitectura React: `pnpm react:doctor`. Para cambios grandes, ejecutar antes y después. La versión está fijada; el comando desactiva telemetría, score remoto y análisis externo de dependencias. Los informes quedan en `work/react-doctor`, ignorado por Git.
+- Al cambiar componentes/hooks o revisar arquitectura React: `pnpm run doctor` (alias `pnpm run react:doctor`). `pnpm doctor` sin `run` es un comando de pnpm, no este script. Para cambios grandes, ejecutar antes y después. La versión está fijada en `react-doctor`; el comando desactiva telemetría, score remoto y análisis externo de dependencias. Los informes quedan en `work/react-doctor`, ignorado por Git.
 - React Doctor complementa ESLint, tipos, pruebas y navegador. Verificar cada hallazgo en el código; corregir regresiones y problemas relevantes del alcance. No perseguir 100 puntos, ocultar reglas ni iniciar refactors masivos para limpiar avisos. Deuda previa y falsos positivos se documentan con evidencia y siguiente paso; un fallo real de seguridad o integridad del cambio se resuelve antes de publicarlo.
 - Tests para comportamiento e invariantes: conflictos, versión, idempotencia, aislamiento y confirmación humana. No agregar tests que solo reproduzcan la implementación o congelen estilos/copys por rutina. Si cambia la frontera del agente, ejecutar `pnpm eval:offline`; `pnpm eval:live` es separado, con presupuesto explícito en `docs/EVALUACIONES.md`.
 - Documentación/skills sin cambios ejecutables: enlaces, comandos, formato y validación de la skill; no repetir build o llamadas a Meta sin motivo. Comprobar el resultado real y reportar verificaciones omitidas o bloqueadas.
@@ -36,6 +36,20 @@
 - Commits pequeños y descriptivos; diff enfocado, sin temporales, informes, secretos, datos reales ni material privado copiado. Conservar procedencia y licencias cuando corresponda.
 - Una fuente de documentación por decisión. README con comandos reproducibles y límites actuales; distinguir implementado, probado localmente, subido a GitHub y desplegado. No afirmar capacidades a partir de una puntuación o simulación.
 - Para una revisión de calidad, arquitectura o refactor significativo, usar la skill local [denta-quality](.agents/skills/denta-quality/SKILL.md). No exige ceremonias adicionales para cambios triviales.
+
+## Skills locales
+
+Están en `.agents/skills/` con su licencia de origen. Usarlas cuando el cambio toca ese tema.
+
+- [denta-quality](.agents/skills/denta-quality/SKILL.md): fronteras de este repositorio y diagnóstico proporcional.
+- [web-design-guidelines](.agents/skills/web-design-guidelines/SKILL.md): revisión de interfaz, foco, formularios y accesibilidad.
+- [composition-patterns](.agents/skills/composition-patterns/SKILL.md): composición React cuando un componente acumula variantes.
+- [frontend-design](.agents/skills/frontend-design/SKILL.md): dirección visual al rediseñar una pantalla.
+- [webapp-testing](.agents/skills/webapp-testing/SKILL.md): probar la aplicación con Playwright.
+- [shadcn](.agents/skills/shadcn/SKILL.md): componentes del registro shadcn, si se incorporan.
+- [tdd](.agents/skills/tdd/SKILL.md): pruebas de comportamiento antes de la implementación.
+- [improve-codebase-architecture](.agents/skills/improve-codebase-architecture/SKILL.md): profundizar un módulo con fricción real.
+- [systematic-debugging](.agents/skills/systematic-debugging/SKILL.md): un fallo de prueba o de comportamiento antes de proponer el arreglo.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

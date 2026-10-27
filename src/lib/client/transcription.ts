@@ -15,12 +15,9 @@ export async function transcribeWav(audio: Blob, signal: AbortSignal) {
   if (!response.ok) {
     const body: unknown = await response.json().catch(() => null);
     const parsed = z.object({ error: z.string().max(400) }).safeParse(body);
-    throw new Error(
-      parsed.success ? parsed.data.error : 'No se pudo transcribir. Volvé a intentar.',
-    );
+    throw new Error(parsed.success ? parsed.data.error : 'Could not transcribe. Try again.');
   }
   const parsed = transcriptSchema.safeParse(await response.json().catch(() => null));
-  if (!parsed.success)
-    throw new Error('La transcripción llegó vacía o no se pudo leer. Volvé a intentar.');
+  if (!parsed.success) throw new Error('The transcript was empty or could not be read. Try again.');
   return parsed.data.text;
 }

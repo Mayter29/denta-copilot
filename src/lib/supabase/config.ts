@@ -9,9 +9,7 @@ export function getSupabaseConfig(env: Record<string, string | undefined> = proc
     throw new Error(`Supabase debe apuntar exclusivamente al proyecto ${SUPABASE_PROJECT_REF}.`);
   }
   if (!publishableKey?.startsWith('sb_publishable_') || publishableKey.length < 25) {
-    throw new Error(
-      'Configurá la clave publicable de Denta Copilot; no se aceptan claves secretas.',
-    );
+    throw new Error('Set the publishable key for Denta. Secret keys are not accepted.');
   }
   return { url, publishableKey };
 }

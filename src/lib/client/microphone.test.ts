@@ -101,11 +101,11 @@ it('permiso denegado no deja contexto de audio ni entrega un blob', async () => 
   getMedia.mockRejectedValue(new DOMException('Permission denied', 'NotAllowedError'));
   await expect(capture.start()).rejects.toThrow('Permission denied');
   expect(context().close).toHaveBeenCalled();
-  expect(microphoneError(new DOMException('', 'NotAllowedError'))).toContain('permiso');
+  expect(microphoneError(new DOMException('', 'NotAllowedError'))).toContain('permission');
 });
 it('falla claramente si la captura no está soportada', async () => {
   vi.stubGlobal('isSecureContext', false);
-  await expect(capture.start()).rejects.toThrow('navegador');
+  await expect(capture.start()).rejects.toThrow('browser');
   expect(getMedia).not.toHaveBeenCalled();
 });
 it('interrupción de dispositivo descarta y libera la captura', async () => {
@@ -113,7 +113,7 @@ it('interrupción de dispositivo descarta y libera la captura', async () => {
   track.onended?.();
   expect(callbacks.onInterrupted).toHaveBeenCalledTimes(1);
   expect(track.stop).toHaveBeenCalled();
-  await expect(capture.stop()).rejects.toThrow('no está disponible');
+  await expect(capture.stop()).rejects.toThrow('no longer available');
 });
 it('el límite retiene como máximo 60 segundos y notifica una sola vez por muestras', async () => {
   await capture.start();
@@ -132,7 +132,7 @@ it('el temporizador de límite se elimina al cancelar', async () => {
 it('timeout del worklet falla cerrado y libera micrófono y contexto', async () => {
   await capture.start();
   node().flush = false;
-  const stopped = expect(capture.stop()).rejects.toThrow('finalizar');
+  const stopped = expect(capture.stop()).rejects.toThrow('finish');
   await vi.advanceTimersByTimeAsync(2000);
   await stopped;
   expect(track.stop).toHaveBeenCalled();
@@ -141,7 +141,7 @@ it('timeout del worklet falla cerrado y libera micrófono y contexto', async () 
 it('cancelar durante finalización impide entregar audio', async () => {
   await capture.start();
   node().flush = false;
-  const stopped = expect(capture.stop()).rejects.toThrow('descartada');
+  const stopped = expect(capture.stop()).rejects.toThrow('discarded');
   capture.cancel();
   await stopped;
 });

@@ -10,7 +10,7 @@ it('rechaza otro origen, host y demo deshabilitada', () => {
       }),
       true,
     ),
-  ).toThrow('Origen');
+  ).toThrow('origin');
   expect(() =>
     guardLocal(new Request('http://example.com', { headers: { host: 'example.com' } })),
   ).toThrow('localhost');
@@ -33,5 +33,5 @@ it('acepta exactamente el origen y host locales', () => {
 it('limita el cuerpo antes de parsear JSON', async () => {
   await expect(
     boundedJson(new Request('http://localhost', { method: 'POST', body: 'x'.repeat(17000) })),
-  ).rejects.toThrow('grande');
+  ).rejects.toThrow('too large');
 });

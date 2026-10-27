@@ -1,37 +1,72 @@
-import { CalendarDays, Clock3, ArrowUpRight, BookOpen, History } from 'lucide-react';
+import { CalendarDays, Clock3, BookOpen, History } from 'lucide-react';
 import type { Workspace } from '@/lib/domain/types';
 import { doctors, services } from '@/lib/domain/types';
 import { knowledge } from '@/lib/domain/knowledge';
+
+const serviceNames: Record<string, string> = {
+  evaluation: 'Evaluation',
+  cleaning: 'Cleaning',
+};
+const outreachLabels = {
+  confirmed: 'Confirmed',
+  unconfirmed: 'Not confirmed',
+  no_show: 'No-show',
+};
+const auditLabels: Record<string, string> = {
+  book: 'Appointment booked',
+  cancel: 'Appointment cancelled',
+  reschedule: 'Appointment moved',
+  follow_up: 'Follow-up recorded',
+};
+
 export function AgendaPanel({
   state,
   date,
   onDate,
   tab,
   onTab,
+  selectedId,
+  onSelect,
 }: {
   state: Workspace;
   date: string;
-  onDate: (v: string) => void;
+  onDate: (value: string) => void;
   tab: string;
-  onTab: (v: string) => void;
+  onTab: (value: string) => void;
+  selectedId: string;
+  onSelect: (id: string) => void;
 }) {
   const appointments = state.appointments
-    .filter((a) => a.date === date && a.status === 'scheduled')
+    .filter((appointment) => appointment.date === date && appointment.status === 'scheduled')
     .sort((a, b) => a.time.localeCompare(b.time));
+  const queue = state.appointments.filter(
+    (appointment) => appointment.status === 'scheduled' && appointment.outreach !== 'confirmed',
+  );
   return (
-    <aside className="context-panel" aria-label="Contexto de la clínica">
-      <div className="context-tabs" role="tablist" aria-label="Contexto">
-        <button role="tab" aria-selected={tab === 'agenda'} onClick={() => onTab('agenda')}>
+    <section className="agenda-panel" aria-labelledby="agenda-heading">
+      <div className="context-tabs" role="tablist" aria-label="Clinic context">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'agenda'}
+          onClick={() => onTab('agenda')}
+        >
           <CalendarDays size={16} />
-          Agenda
-        </button>
-        <button role="tab" aria-selected={tab === 'knowledge'} onClick={() => onTab('knowledge')}>
-          <BookOpen size={16} />
-          Fuentes
+          Schedule
         </button>
         <button
+          type="button"
           role="tab"
-          aria-label="Actividad"
+          aria-selected={tab === 'knowledge'}
+          onClick={() => onTab('knowledge')}
+        >
+          <BookOpen size={16} />
+          Sources
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-label="Activity"
           aria-selected={tab === 'audit'}
           onClick={() => onTab('audit')}
         >
@@ -39,128 +74,151 @@ export function AgendaPanel({
         </button>
       </div>
       {tab === 'agenda' ? (
-        <>
+        <div className="panel-scroll">
           <div className="context-heading">
             <div>
-              <span className="eyebrow">TU CLÍNICA, AL DÍA</span>
-              <h2>Agenda de citas</h2>
+              <p className="eyebrow">1 · Today’s book</p>
+              <h2 id="agenda-heading">Schedule</h2>
             </div>
-            <ArrowUpRight size={20} />
+          </div>
+          <div className="queue">
+            <h3>Needs a follow-up</h3>
+            {queue.length ? (
+              <ul>
+                {queue.map((appointment) => (
+                  <li key={appointment.id}>
+                    <button
+                      type="button"
+                      className={appointment.id === selectedId ? 'is-selected' : ''}
+                      aria-pressed={appointment.id === selectedId}
+                      onClick={() => onSelect(appointment.id)}
+                    >
+                      <span className={`outreach ${appointment.outreach}`}>
+                        {outreachLabels[appointment.outreach]}
+                      </span>
+                      <strong>{appointment.patient}</strong>
+                      <span>
+                        {appointment.date} · {appointment.time}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted small">Everyone on the book is confirmed.</p>
+            )}
           </div>
           <label className="date-picker">
-            Fecha de la agenda
+            Schedule date
             <input
               type="date"
               value={date}
-              onInput={(e) => onDate(e.currentTarget.value)}
-              onChange={(e) => onDate(e.target.value)}
+              onInput={(event) => onDate(event.currentTarget.value)}
+              onChange={(event) => onDate(event.target.value)}
             />
           </label>
-          <div className="agenda-count">
-            <span>{appointments.length} citas programadas</span>
+          <p className="agenda-count">
+            <span>
+              {appointments.length} visit{appointments.length === 1 ? '' : 's'}
+            </span>
             <span className="badge soft">Costa Rica</span>
-          </div>
+          </p>
           <div className="appointment-list">
             {appointments.length ? (
-              appointments.map((a) => (
-                <article className="appointment" key={a.id}>
-                  <div className="appointment-time">
-                    <strong>{a.time}</strong>
-                    <span>{a.duration} min</span>
-                  </div>
-                  <div className={`appointment-body ${a.doctorId}`}>
+              appointments.map((appointment) => (
+                <button
+                  className={`appointment ${appointment.id === selectedId ? 'is-selected' : ''}`}
+                  key={appointment.id}
+                  type="button"
+                  aria-pressed={appointment.id === selectedId}
+                  onClick={() => onSelect(appointment.id)}
+                >
+                  <span className="appointment-time">
+                    <strong>{appointment.time}</strong>
+                    <span>{appointment.duration} min</span>
+                  </span>
+                  <span className={`appointment-body ${appointment.doctorId}`}>
                     <span className="small muted">
-                      {services.find((s) => s.id === a.serviceId)?.name}
+                      {serviceNames[appointment.serviceId] ??
+                        services.find((service) => service.id === appointment.serviceId)?.name}
                     </span>
-                    <h3>{a.patient}</h3>
-                    <p>{doctors.find((d) => d.id === a.doctorId)?.name}</p>
-                    <span className="appointment-status">
-                      <span />
-                      Programada
+                    <strong className="appointment-patient">{appointment.patient}</strong>
+                    <span className="appointment-doctor">
+                      {doctors.find((doctor) => doctor.id === appointment.doctorId)?.name}
                     </span>
-                  </div>
-                </article>
+                    <span className={`outreach ${appointment.outreach}`}>
+                      {outreachLabels[appointment.outreach]}
+                    </span>
+                  </span>
+                </button>
               ))
             ) : (
               <div className="empty-agenda">
                 <CalendarDays size={28} />
-                <p>No hay citas para este día.</p>
-                <span>Pedile al copiloto que consulte un espacio.</span>
+                <p>No visits on this day.</p>
+                <span>Ask Denta for an opening, or pick another date.</span>
               </div>
             )}
           </div>
           <div className="hours-note">
             <Clock3 size={17} />
             <div>
-              <strong>Horario de atención</strong>
-              <p>Lun–vie 8:00–17:00 · Sáb 8:00–12:00</p>
+              <strong>Clinic hours</strong>
+              <p>Mon–Fri 8:00–17:00 · Sat 8:00–12:00</p>
             </div>
           </div>
-        </>
+        </div>
       ) : tab === 'knowledge' ? (
-        <>
+        <div className="panel-scroll">
           <div className="context-heading">
             <div>
-              <span className="eyebrow">CONTEXTO VERIFICABLE</span>
-              <h2>Conocimiento de la clínica</h2>
+              <p className="eyebrow">Sources Denta can cite</p>
+              <h2 id="agenda-heading">Clinic knowledge</h2>
             </div>
           </div>
           <p className="muted small">
-            Fuentes ficticias consultables por el agente. Recuperación por texto en esta primera
-            versión.
+            Fictional notes. The text is in Spanish, as the clinic would write it.
           </p>
-          {knowledge.map((k) => (
-            <article className="source" key={k.id}>
+          {knowledge.map((source) => (
+            <article className="source" key={source.id} lang="es">
               <BookOpen size={17} />
               <div>
-                <h3>{k.title}</h3>
-                <p>{k.content}</p>
+                <h3>{source.title}</h3>
+                <p>{source.content}</p>
               </div>
             </article>
           ))}
-        </>
+        </div>
       ) : (
-        <>
+        <div className="panel-scroll">
           <div className="context-heading">
             <div>
-              <span className="eyebrow">CAMBIOS CONFIRMADOS</span>
-              <h2>Actividad de la sesión</h2>
+              <p className="eyebrow">Confirmed in this session</p>
+              <h2 id="agenda-heading">Activity</h2>
             </div>
           </div>
           {state.audit.length ? (
-            state.audit.toReversed().map((a) => (
-              <article className="source" key={a.id}>
+            state.audit.toReversed().map((event) => (
+              <article className="source" key={event.id}>
                 <CalendarDays size={17} />
                 <div>
-                  <h3>
-                    {
-                      {
-                        book: 'Cita agendada',
-                        cancel: 'Cita cancelada',
-                        reschedule: 'Cita reagendada',
-                      }[a.action]
-                    }
-                  </h3>
+                  <h3>{auditLabels[event.action] ?? event.action}</h3>
                   <p>
-                    {new Date(a.at).toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' })}
+                    {new Date(event.at).toLocaleString('en-US', { timeZone: 'America/Costa_Rica' })}
                   </p>
-                  <p>Confirmación registrada por el servidor.</p>
+                  <p>Recorded by the server after a click.</p>
                 </div>
               </article>
             ))
           ) : (
-            <p className="muted">Los cambios aparecerán aquí después de confirmarlos.</p>
+            <p className="empty-copy">Confirmed changes and follow-ups show up here.</p>
           )}
-        </>
+        </div>
       )}
-      <div className="demo-note">
+      <p className="demo-note">
         <span className="status-dot" />
-        <p>
-          <strong>Entorno de demostración</strong>
-          <br />
-          Personas y datos completamente ficticios.
-        </p>
-      </div>
-    </aside>
+        Fictional people only. Nothing here is a real patient record.
+      </p>
+    </section>
   );
 }

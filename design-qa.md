@@ -18,7 +18,7 @@ Adaptación del compositor de la captura facilitada por la usuaria: contenedor r
 - Tipografía: se mantiene Arial/Helvetica del producto, 14 px en escritorio y 16 px en móvil. Placeholder legible; texto multilínea crece hasta un máximo y conserva los controles visibles.
 - Espaciado: radio de 28 px (24 en móvil), acciones circulares de 44 px y separaciones de 8 px. Compositor anclado al pie mediante el mínimo alto del panel y la conversación desplazable.
 - Colores: turquesa `#2a98ae`, acento fuerte `#1a7487`, fondo blanco y halo turquesa. Cambio deliberado respecto al azul/oscuro de la referencia. Foco y hover aumentan el halo; las transiciones respetan movimiento reducido.
-- Activos: iconos de la biblioteca Lucide ya instalada. Se usa audio de archivo y flecha de envío para representar las funciones reales; no se copian iconos, código ni activos de EVA.
+- Activos: iconos de la biblioteca Lucide ya instalada. Se usa audio de archivo y flecha de envío para representar las funciones reales; no se copian iconos, código ni activos de otros productos.
 - Contenido: placeholder administrativo, indicación «Audio a borrador», advertencia de datos ficticios y confirmación humana conservadas.
 
 ## Interacciones y hallazgos

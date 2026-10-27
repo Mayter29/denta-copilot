@@ -4,15 +4,16 @@ export const DICTATION_MAX_SECONDS = 60;
 /** Encode mono samples at 16 kHz. The browser resamples before this boundary. */
 export function encodePcmWav(samples: Float32Array): ArrayBuffer {
   if (samples.length < DICTATION_SAMPLE_RATE)
-    throw new Error('Grabá al menos un segundo antes de transcribir.');
+    throw new Error('Record at least one second before transcribing.');
   if (samples.length > DICTATION_SAMPLE_RATE * DICTATION_MAX_SECONDS)
-    throw new Error('La grabación supera los 60 segundos.');
+    throw new Error('The recording is longer than 60 seconds.');
   let peak = 0;
   for (const sample of samples) {
-    if (!Number.isFinite(sample)) throw new Error('No se pudo leer el audio. Volvé a grabar.');
+    if (!Number.isFinite(sample)) throw new Error('The audio could not be read. Record again.');
     peak = Math.max(peak, Math.abs(sample));
   }
-  if (peak < 0.00001) throw new Error('No se detectó audio. Revisá el micrófono y volvé a grabar.');
+  if (peak < 0.00001)
+    throw new Error('No audio was detected. Check the microphone and record again.');
   const buffer = new ArrayBuffer(44 + samples.length * 2);
   const view = new DataView(buffer);
   const write = (at: number, text: string) => {

@@ -10,7 +10,7 @@ La demostración usa una clínica y personas inventadas con situaciones realista
 
 ## Hackathon y posicionamiento
 
-Se leyeron las reglas del canal oficial [rules](https://discord.com/channels/1557169028080869426/1557169028626251800) en Chrome el 27 de octubre:
+Se revisaron las reglas oficiales del hackathon el 27 de octubre. El canal privado donde se publicaron no se enlaza desde este repositorio:
 
 - Trabajo presentado construido durante el evento: 26 de octubre–4 de noviembre de 2026. Deben distinguirse las contribuciones nuevas.
 - Repositorio público en la entrega, video de tres minutos y equipo agregado.

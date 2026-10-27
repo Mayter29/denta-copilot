@@ -7,7 +7,7 @@ export function DentaryBrand({ placement }: { placement: 'sidebar' | 'header' })
     <Link
       href="/"
       className={`${styles.brand} ${styles[placement]}`}
-      aria-label="Denta Copilot de Dentary, inicio"
+      aria-label="Denta by Dentary, home"
     >
       <Image
         className={styles.icon}
@@ -24,11 +24,17 @@ export function DentaryBrand({ placement }: { placement: 'sidebar' | 'header' })
             width={164}
             height={21}
           />
-          <span>Denta Copilot</span>
+          <span>Denta</span>
         </span>
       ) : (
-        <span className={styles.product}>
-          Denta Copilot<small>de Dentary</small>
+        <span className={styles.wordmark}>
+          <Image
+            src="/brand/dentary/dentary-horizontal-light.svg"
+            alt="Dentary"
+            width={148}
+            height={19}
+          />
+          <span>Denta</span>
         </span>
       )}
     </Link>

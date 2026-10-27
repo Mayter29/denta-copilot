@@ -8,11 +8,11 @@ type Callbacks = {
 export function microphoneError(error: unknown) {
   const name = error instanceof Error ? error.name : '';
   if (name === 'NotAllowedError' || name === 'SecurityError')
-    return 'No se pudo acceder al micrófono. Revisá el permiso de este sitio en el navegador.';
-  if (name === 'NotFoundError') return 'No encontramos un micrófono. Conectalo y volvé a intentar.';
+    return 'Microphone permission was blocked. Allow it for this site and try again.';
+  if (name === 'NotFoundError') return 'No microphone was found. Connect one and try again.';
   if (name === 'NotReadableError')
-    return 'El micrófono está ocupado o no está disponible. Revisá otras aplicaciones.';
-  return error instanceof Error ? error.message : 'No se pudo grabar el audio. Volvé a intentar.';
+    return 'The microphone is busy or unavailable. Check other applications.';
+  return error instanceof Error ? error.message : 'Could not record audio. Try again.';
 }
 
 /** One capture per instance. Owns tracks, context, timers and in-memory samples. */
@@ -40,7 +40,7 @@ export class MicrophoneCapture {
       typeof AudioWorkletNode === 'undefined'
     )
       throw new Error(
-        'Este navegador no permite grabar aquí. Usá un navegador actualizado en localhost o HTTPS.',
+        'This browser cannot record here. Use a current browser on localhost or HTTPS.',
       );
     try {
       // Create/resume from the click, before awaiting the permission dialog.
@@ -71,12 +71,11 @@ export class MicrophoneCapture {
       if (this.closed) return;
       const context = this.context;
       const stream = this.stream;
-      if (!stream || !context.audioWorklet)
-        throw new Error('No se pudo preparar la captura de audio.');
+      if (!stream || !context.audioWorklet) throw new Error('Could not prepare audio capture.');
       await context.audioWorklet.addModule('/audio/pcm-capture.js');
       if (this.closed) return;
       if (context.state !== 'running')
-        throw new Error('El audio se interrumpió antes de empezar. Volvé a intentar.');
+        throw new Error('Audio stopped before recording began. Try again.');
       this.source = context.createMediaStreamSource(stream);
       this.node = new AudioWorkletNode(context, 'denta-pcm-capture', {
         numberOfInputs: 1,
@@ -144,14 +143,14 @@ export class MicrophoneCapture {
 
   async stop(): Promise<Blob> {
     if (this.closed || this.stopping || !this.node || !this.context)
-      throw new Error('La grabación ya no está disponible. Volvé a intentar.');
+      throw new Error('The recording is no longer available. Try again.');
     this.stopping = true;
     clearTimeout(this.deadline);
     const sampleRate = this.context.sampleRate;
     try {
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(
-          () => reject(new Error('No se pudo finalizar el audio. Volvé a grabar.')),
+          () => reject(new Error('Could not finish the audio. Record again.')),
           2000,
         );
         this.finish = () => {
@@ -195,7 +194,7 @@ export class MicrophoneCapture {
   cancel() {
     this.closed = true;
     clearTimeout(this.deadline);
-    this.rejectFinish?.(new Error('Grabación descartada.'));
+    this.rejectFinish?.(new Error('Recording discarded.'));
     this.finish = undefined;
     this.rejectFinish = undefined;
     this.source?.disconnect();

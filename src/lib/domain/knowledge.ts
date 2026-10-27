@@ -25,10 +25,16 @@ export const knowledge = [
       'Para reservar se necesita nombre ficticio del paciente, servicio, profesional, fecha y hora. Consultar disponibilidad real antes de proponer. Cancelar y reagendar requieren identificar la cita sin ambigüedad. Toda escritura requiere confirmar la tarjeta. Una propuesta no reserva el espacio. Su vigencia es de 10 minutos; al confirmar se verifica otra vez la disponibilidad.',
   },
   {
+    id: 'follow-up',
+    title: 'Confirmaciones y ausencias',
+    content:
+      'Una cita puede estar confirmada, sin confirmar o marcada como inasistencia. Para quien no confirmó o no se presentó se puede preparar un mensaje de seguimiento en español. Ese mensaje queda en una tarjeta hasta que el personal lo confirme. La vista del paciente es una simulación dentro de la demo: no envía WhatsApp, SMS ni llamadas.',
+  },
+  {
     id: 'privacy',
     title: 'Datos y alcance de la demo',
     content:
-      'Usar solo personas y situaciones inventadas. No ingresar expedientes, identificaciones, teléfonos ni datos clínicos reales. El asistente gestiona operaciones administrativas. WhatsApp y voz en vivo aún no están conectados.',
+      'Usar solo personas y situaciones inventadas. No ingresar expedientes, identificaciones, teléfonos ni datos clínicos reales. Denta gestiona operaciones administrativas. WhatsApp real y voz en vivo aún no están conectados.',
   },
 ];
 const normalize = (s: string) =>

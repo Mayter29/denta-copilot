@@ -27,6 +27,6 @@ it.each(['sb_secret_fictional_value', 'service_role', '', undefined])(
         NEXT_PUBLIC_SUPABASE_URL: SUPABASE_PROJECT_URL,
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishableKey,
       }),
-    ).toThrow('publicable');
+    ).toThrow('publishable');
   },
 );

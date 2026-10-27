@@ -9,12 +9,12 @@ import {
   sessionId,
   withWorkspace,
 } from '@/lib/server/workspace';
-const schema = z.object({ id: z.uuid(), approved: z.boolean() }).strict();
+const schema = z.strictObject({ id: z.uuid(), approved: z.boolean() });
 export async function POST(request: Request) {
   try {
     guardLocal(request, true);
     const parsed = schema.safeParse(await boundedJson(request));
-    if (!parsed.success) throw new RequestError('Propuesta inválida.');
+    if (!parsed.success) throw new RequestError('Invalid proposal.');
     return await withWorkspace(await sessionId(), (state) => {
       decide(state, parsed.data.id, parsed.data.approved);
       return Response.json({
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
         messages: state.messages,
         appointments: state.appointments,
         proposals: state.proposals,
+        patientMessages: state.patientMessages,
         audit: state.audit,
       });
     });
