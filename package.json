@@ -12,6 +12,7 @@
     "eval:live": "vitest run --config vitest.live.config.ts",
     "lint": "eslint src",
     "react:doctor": "react-doctor . --yes --no-telemetry --no-supply-chain --verbose --output-dir work/react-doctor",
+    "doctor": "pnpm react:doctor",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "format": "prettier --write src docs *.json *.ts *.mjs *.md",
     "supabase:check": "node --experimental-strip-types scripts/check-supabase.mjs"

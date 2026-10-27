@@ -1,13 +1,15 @@
 # Calidad y diagnóstico React
 
-Las reglas del proyecto viven en [AGENTS.md](../AGENTS.md). Para una revisión o refactor significativo está disponible la skill local [denta-quality](../.agents/skills/denta-quality/SKILL.md), con redacción propia adaptada conceptualmente de las skills de React, composición y rendimiento consultadas en Odontoser. No se copiaron código de producto, conexiones ni documentos internos.
+Las reglas del proyecto viven en [AGENTS.md](../AGENTS.md). Para una revisión o refactor significativo está disponible la skill local [denta-quality](../.agents/skills/denta-quality/SKILL.md), con redacción propia. No se copiaron código de producto, conexiones ni documentos internos.
 
 ## Comandos reproducibles
 
-```powershell
+```bash
 pnpm check
-pnpm react:doctor
+pnpm run doctor
 ```
+
+`pnpm react:doctor` es el mismo comando. `pnpm doctor` sin `run` no ejecuta el script: pnpm reserva ese nombre.
 
 `check` mantiene lint, tipos, tests y build. React Doctor es un diagnóstico adicional separado: no añade hooks, servicios, CI ni un umbral de puntuación. Se fija `react-doctor@0.9.18` como dependencia de desarrollo y el lockfile conserva su resolución. Revisar `pnpm exec react-doctor --help` antes de cambiar opciones o actualizar versión.
 
@@ -33,3 +35,7 @@ Estos avisos previos permanecen visibles. No se usa una baseline para ocultarlos
 Al implementar el dictado se extrajeron compositor, controles, ciclo de vida y acceso al dispositivo. El diagnóstico posterior conserva **cero errores y cuatro avisos** (tres recomendaciones de Zod y el formateador Intl). Desaparecieron los avisos de tamaño/complejidad del workspace y lectura HTTP de transcripción, sin silenciar reglas. La complejidad detectada durante el desarrollo del compositor nuevo también se resolvió separando controles y recuperación antes de cerrar el cambio.
 
 `pnpm check` aprobó 92 pruebas en 13 archivos, lint, tipos y build. Se añadieron Testing Library y happy-dom como dependencias de desarrollo fijadas para probar interacción React y limpieza/cancelación, además de las pruebas del AudioWorklet y del controlador. Ver [evidencia y límites del dictado](DICTADO.md).
+
+## Escritorio de recepción
+
+Al separar la sesión, la agenda y el canal del paciente, el mismo comando quedó sin avisos: los tres esquemas pasaron a `z.strictObject`, el formateador de la fecha clínica se creó una sola vez y la coordinación del escritorio salió de `CopilotWorkspace`. No se desactivaron reglas. El informe sigue en `work/react-doctor`, fuera de Git.

@@ -62,7 +62,7 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
       { model, now },
     );
     expect(result.kind).toBe('proposal');
-    expect(result.text).toContain('pendiente');
+    expect(result.text).toContain('Proposal ready');
     expect(result.proposals[0].change).toEqual({ action: 'book', ...booking });
     expect(state.appointments).toHaveLength(3);
     expect(state.audit).toEqual([]);
@@ -233,6 +233,62 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
     expect(state.appointments).toHaveLength(3);
     expect(state.audit).toEqual([]);
     expect(state.proposals).toEqual([]);
+  });
+
+  it('el seguimiento queda en tarjeta y el hilo del paciente solo cambia con el clic', async () => {
+    const state = seedWorkspace('2026-10-27');
+    const message = 'Hola Luis, te escribimos para confirmar tu cita de hoy. ¿Podés venir?';
+    const before = state.patientThread.length;
+    const model = scriptedModel([
+      { toolName: 'proposeFollowUp', input: { appointmentId: 'demo-luis', message } },
+      (prompt) =>
+        final(
+          'proposal',
+          'Ya se lo envié',
+          [],
+          [toolOutput<Proposal>(prompt, 'proposeFollowUp').id],
+        ),
+    ]);
+    const result = await runSecretary(state, 'Hacé seguimiento a Luis', { model, now });
+    expect(result.kind).toBe('proposal');
+    expect(result.text).toContain('Proposal ready');
+    expect(result.execution).toBe('none');
+    expect(state.patientThread).toHaveLength(before);
+    expect(state.audit).toEqual([]);
+    expect(state.appointments).toHaveLength(3);
+    decide(state, result.proposals[0].id, true, now);
+    decide(state, result.proposals[0].id, true, now);
+    expect(state.patientThread.at(-1)).toMatchObject({
+      body: message,
+      direction: 'outbound',
+      appointmentId: 'demo-luis',
+    });
+    expect(state.audit).toHaveLength(1);
+    expect(state.appointments.find((item) => item.id === 'demo-luis')?.version).toBe(1);
+  });
+
+  it('un seguimiento a una cita confirmada no crea tarjeta ni mensaje', async () => {
+    const state = seedWorkspace('2026-10-27');
+    const before = structuredClone(state.patientThread);
+    const model = scriptedModel([
+      {
+        toolName: 'proposeFollowUp',
+        input: {
+          appointmentId: 'demo-ana',
+          message: 'Hola Ana, solo queríamos saludarte antes de tu limpieza.',
+        },
+      },
+      (prompt) => {
+        expect(toolOutput<{ error: string }>(prompt, 'proposeFollowUp').error).toContain(
+          'confirmed',
+        );
+        return final('answer', 'Ana ya confirmó.');
+      },
+    ]);
+    expect((await runSecretary(state, 'Seguí a Ana', { model, now })).kind).toBe('answer');
+    expect(state.proposals).toEqual([]);
+    expect(state.patientThread).toEqual(before);
+    expect(state.audit).toEqual([]);
   });
 
   it('ID de otra sesión no genera una propuesta válida', async () => {

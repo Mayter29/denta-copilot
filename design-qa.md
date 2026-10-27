@@ -4,7 +4,7 @@
 
 Adaptación del compositor de la captura facilitada por la usuaria: contenedor redondeado, borde luminoso sutil y botones circulares. Se conserva la paleta clara/turquesa de Dentary y la funcionalidad de Denta Copilot. No se busca reproducir el tema oscuro ni introducir voz en vivo.
 
-- Referencia visual: `C:/Users/mayte/AppData/Local/Temp/codex-clipboard-340ad192-655d-4a8c-bef0-d690aeecffd0.png` (786 × 158 px). Archivo externo aportado por la usuaria; no se incorpora al repositorio público.
+- Referencia visual: un recorte externo de 786 × 158 px. No se incorpora al repositorio público.
 - Implementación: `http://127.0.0.1:3420/`.
 - Captura de escritorio: `work/composer-review/desktop.png` (817 × 752 px).
 - Captura móvil: `work/composer-review/mobile.png` (390 × 844 px).
@@ -18,7 +18,7 @@ Adaptación del compositor de la captura facilitada por la usuaria: contenedor r
 - Tipografía: se mantiene Arial/Helvetica del producto, 14 px en escritorio y 16 px en móvil. Placeholder legible; texto multilínea crece hasta un máximo y conserva los controles visibles.
 - Espaciado: radio de 28 px (24 en móvil), acciones circulares de 44 px y separaciones de 8 px. Compositor anclado al pie mediante el mínimo alto del panel y la conversación desplazable.
 - Colores: turquesa `#2a98ae`, acento fuerte `#1a7487`, fondo blanco y halo turquesa. Cambio deliberado respecto al azul/oscuro de la referencia. Foco y hover aumentan el halo; las transiciones respetan movimiento reducido.
-- Activos: iconos de la biblioteca Lucide ya instalada. Se usa audio de archivo y flecha de envío para representar las funciones reales; no se copian iconos, código ni activos de EVA.
+- Activos: iconos de la biblioteca Lucide ya instalada. Se usa audio de archivo y flecha de envío para representar las funciones reales. No se copian iconos ni código de otros productos.
 - Contenido: placeholder administrativo, indicación «Audio a borrador», advertencia de datos ficticios y confirmación humana conservadas.
 
 ## Interacciones y hallazgos

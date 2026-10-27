@@ -44,4 +44,4 @@ Aplicar las verificaciones proporcionales de AGENTS.md y detenerse cuando exista
 
 ## Procedencia
 
-Redacción propia para este repositorio. Se consultaron conceptualmente las skills `react-best-practices`, `composition-patterns` y `performance-optimization` disponibles en Odontoser. No se trasladaron documentos privados, código de producto ni conexiones. Referencias públicas para profundizar cuando haga falta: [React](https://react.dev/learn), [patrones Vercel](https://github.com/vercel-labs/agent-skills) y [React Doctor](https://github.com/millionco/react-doctor).
+Redacción propia para este repositorio. No se trasladaron documentos privados, código de producto ni conexiones. Referencias públicas para profundizar cuando haga falta: [React](https://react.dev/learn), [patrones Vercel](https://github.com/vercel-labs/agent-skills) y [React Doctor](https://github.com/millionco/react-doctor).

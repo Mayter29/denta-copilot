@@ -2,7 +2,7 @@ import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { cookies } from 'next/headers';
-import { DomainError, seedWorkspace } from '../domain/agenda';
+import { DomainError, hydrateWorkspace, seedWorkspace } from '../domain/agenda';
 import type { Workspace } from '../domain/types';
 
 export class RequestError extends Error {
@@ -65,7 +65,7 @@ export async function withWorkspace<T>(
       const file = path.join(directory, `${id}.json`);
       let state: Workspace;
       try {
-        state = JSON.parse(await readFile(file, 'utf8')) as Workspace;
+        state = hydrateWorkspace(JSON.parse(await readFile(file, 'utf8')) as Workspace);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
         state = seedWorkspace();

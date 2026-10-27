@@ -9,7 +9,7 @@ import {
   sessionId,
   withWorkspace,
 } from '@/lib/server/workspace';
-const schema = z.object({ id: z.uuid(), approved: z.boolean() }).strict();
+const schema = z.strictObject({ id: z.uuid(), approved: z.boolean() });
 export async function POST(request: Request) {
   try {
     guardLocal(request, true);
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
         messages: state.messages,
         appointments: state.appointments,
         proposals: state.proposals,
+        patientThread: state.patientThread,
         audit: state.audit,
       });
     });

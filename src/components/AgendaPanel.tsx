@@ -1,166 +1,109 @@
-import { CalendarDays, Clock3, ArrowUpRight, BookOpen, History } from 'lucide-react';
-import type { Workspace } from '@/lib/domain/types';
-import { doctors, services } from '@/lib/domain/types';
-import { knowledge } from '@/lib/domain/knowledge';
+import { CalendarDays, Clock3 } from 'lucide-react';
+import { doctors, services, type Workspace } from '@/lib/domain/types';
+
+const attendanceLabel = {
+  confirmed: 'Confirmed',
+  unconfirmed: 'Unconfirmed',
+  no_show: 'No-show',
+};
+
 export function AgendaPanel({
   state,
   date,
   onDate,
-  tab,
-  onTab,
 }: {
   state: Workspace;
   date: string;
-  onDate: (v: string) => void;
-  tab: string;
-  onTab: (v: string) => void;
+  onDate: (value: string) => void;
 }) {
   const appointments = state.appointments
-    .filter((a) => a.date === date && a.status === 'scheduled')
+    .filter((appointment) => appointment.date === date && appointment.status === 'scheduled')
     .sort((a, b) => a.time.localeCompare(b.time));
+  const queue = state.appointments
+    .filter(
+      (appointment) =>
+        appointment.status === 'scheduled' &&
+        (appointment.attendance === 'unconfirmed' || appointment.attendance === 'no_show'),
+    )
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   return (
-    <aside className="context-panel" aria-label="Contexto de la clínica">
-      <div className="context-tabs" role="tablist" aria-label="Contexto">
-        <button role="tab" aria-selected={tab === 'agenda'} onClick={() => onTab('agenda')}>
-          <CalendarDays size={16} />
-          Agenda
-        </button>
-        <button role="tab" aria-selected={tab === 'knowledge'} onClick={() => onTab('knowledge')}>
-          <BookOpen size={16} />
-          Fuentes
-        </button>
-        <button
-          role="tab"
-          aria-label="Actividad"
-          aria-selected={tab === 'audit'}
-          onClick={() => onTab('audit')}
-        >
-          <History size={16} />
-        </button>
+    <div className="schedule-pane">
+      <div className="context-heading">
+        <div>
+          <span className="eyebrow">RECEPTION</span>
+          <h2>Schedule</h2>
+        </div>
       </div>
-      {tab === 'agenda' ? (
-        <>
-          <div className="context-heading">
-            <div>
-              <span className="eyebrow">TU CLÍNICA, AL DÍA</span>
-              <h2>Agenda de citas</h2>
-            </div>
-            <ArrowUpRight size={20} />
-          </div>
-          <label className="date-picker">
-            Fecha de la agenda
-            <input
-              type="date"
-              value={date}
-              onInput={(e) => onDate(e.currentTarget.value)}
-              onChange={(e) => onDate(e.target.value)}
-            />
-          </label>
-          <div className="agenda-count">
-            <span>{appointments.length} citas programadas</span>
-            <span className="badge soft">Costa Rica</span>
-          </div>
-          <div className="appointment-list">
-            {appointments.length ? (
-              appointments.map((a) => (
-                <article className="appointment" key={a.id}>
-                  <div className="appointment-time">
-                    <strong>{a.time}</strong>
-                    <span>{a.duration} min</span>
-                  </div>
-                  <div className={`appointment-body ${a.doctorId}`}>
-                    <span className="small muted">
-                      {services.find((s) => s.id === a.serviceId)?.name}
-                    </span>
-                    <h3>{a.patient}</h3>
-                    <p>{doctors.find((d) => d.id === a.doctorId)?.name}</p>
-                    <span className="appointment-status">
-                      <span />
-                      Programada
-                    </span>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <div className="empty-agenda">
-                <CalendarDays size={28} />
-                <p>No hay citas para este día.</p>
-                <span>Pedile al copiloto que consulte un espacio.</span>
+      <section className="follow-queue" aria-label="Needs a follow-up">
+        <h3>Needs a follow-up</h3>
+        {queue.length ? (
+          <ul>
+            {queue.map((appointment) => (
+              <li key={appointment.id}>
+                <span className={`attend attend-${appointment.attendance}`}>
+                  {attendanceLabel[appointment.attendance]}
+                </span>
+                <strong>{appointment.patient.replace(' (demo)', '')}</strong>
+                <span>
+                  {appointment.date} · {appointment.time}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>Everyone on the book is confirmed.</p>
+        )}
+      </section>
+      <label className="date-picker">
+        Schedule date
+        <input
+          type="date"
+          value={date}
+          onInput={(event) => onDate(event.currentTarget.value)}
+          onChange={(event) => onDate(event.target.value)}
+        />
+      </label>
+      <div className="agenda-count">
+        <span>
+          {appointments.length} visit{appointments.length === 1 ? '' : 's'}
+        </span>
+        <span className="badge soft">Costa Rica</span>
+      </div>
+      <div className="appointment-list">
+        {appointments.length ? (
+          appointments.map((appointment) => (
+            <article className="appointment" key={appointment.id}>
+              <div className="appointment-time">
+                <strong>{appointment.time}</strong>
+                <span>{appointment.duration} min</span>
               </div>
-            )}
-          </div>
-          <div className="hours-note">
-            <Clock3 size={17} />
-            <div>
-              <strong>Horario de atención</strong>
-              <p>Lun–vie 8:00–17:00 · Sáb 8:00–12:00</p>
-            </div>
-          </div>
-        </>
-      ) : tab === 'knowledge' ? (
-        <>
-          <div className="context-heading">
-            <div>
-              <span className="eyebrow">CONTEXTO VERIFICABLE</span>
-              <h2>Conocimiento de la clínica</h2>
-            </div>
-          </div>
-          <p className="muted small">
-            Fuentes ficticias consultables por el agente. Recuperación por texto en esta primera
-            versión.
-          </p>
-          {knowledge.map((k) => (
-            <article className="source" key={k.id}>
-              <BookOpen size={17} />
-              <div>
-                <h3>{k.title}</h3>
-                <p>{k.content}</p>
+              <div className={`appointment-body ${appointment.doctorId}`}>
+                <span className="small muted">
+                  {services.find((service) => service.id === appointment.serviceId)?.name}
+                </span>
+                <h3>{appointment.patient.replace(' (demo)', '')}</h3>
+                <p>{doctors.find((doctor) => doctor.id === appointment.doctorId)?.name}</p>
+                <span className={`attend attend-${appointment.attendance}`}>
+                  {attendanceLabel[appointment.attendance]}
+                </span>
               </div>
             </article>
-          ))}
-        </>
-      ) : (
-        <>
-          <div className="context-heading">
-            <div>
-              <span className="eyebrow">CAMBIOS CONFIRMADOS</span>
-              <h2>Actividad de la sesión</h2>
-            </div>
+          ))
+        ) : (
+          <div className="empty-agenda">
+            <CalendarDays size={28} aria-hidden="true" />
+            <p>No visits on this day.</p>
+            <span>Ask Denta for an opening, or pick another date.</span>
           </div>
-          {state.audit.length ? (
-            state.audit.toReversed().map((a) => (
-              <article className="source" key={a.id}>
-                <CalendarDays size={17} />
-                <div>
-                  <h3>
-                    {
-                      {
-                        book: 'Cita agendada',
-                        cancel: 'Cita cancelada',
-                        reschedule: 'Cita reagendada',
-                      }[a.action]
-                    }
-                  </h3>
-                  <p>
-                    {new Date(a.at).toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' })}
-                  </p>
-                  <p>Confirmación registrada por el servidor.</p>
-                </div>
-              </article>
-            ))
-          ) : (
-            <p className="muted">Los cambios aparecerán aquí después de confirmarlos.</p>
-          )}
-        </>
-      )}
-      <div className="demo-note">
-        <span className="status-dot" />
-        <p>
-          <strong>Entorno de demostración</strong>
-          <br />
-          Personas y datos completamente ficticios.
-        </p>
+        )}
       </div>
-    </aside>
+      <div className="hours-note">
+        <Clock3 size={17} aria-hidden="true" />
+        <div>
+          <strong>Clinic hours</strong>
+          <p>Mon–Fri 8:00–17:00 · Sat 8:00–12:00</p>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -2,14 +2,12 @@ import { z } from 'zod';
 import { DomainError } from './agenda';
 import type { Proposal, Workspace } from './types';
 
-export const resultSchema = z
-  .object({
-    kind: z.enum(['answer', 'needs_input', 'proposal']),
-    text: z.string().trim().min(1).max(2000),
-    sourceIds: z.array(z.string().min(1).max(100)).max(5),
-    proposalIds: z.array(z.uuid()).max(20),
-  })
-  .strict();
+export const resultSchema = z.strictObject({
+  kind: z.enum(['answer', 'needs_input', 'proposal']),
+  text: z.string().trim().min(1).max(2000),
+  sourceIds: z.array(z.string().min(1).max(100)).max(5),
+  proposalIds: z.array(z.uuid()).max(20),
+});
 export type ResultDraft = z.infer<typeof resultSchema>;
 export type SourceEvidence = { id: string; title: string; content: string; version: string };
 export type VerifiedResult = {
@@ -49,7 +47,7 @@ export function verifyResult(
     // Action state is exclusively server text; model prose cannot announce a write.
     text:
       draft.kind === 'proposal'
-        ? 'Propuesta pendiente. Revisá la tarjeta y confirmá con un clic para aplicar el cambio.'
+        ? 'Proposal ready. Review the card and confirm with a click. Nothing is written until you do.'
         : draft.text,
     sources: resolvedSources,
     proposals,

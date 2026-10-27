@@ -1,15 +1,15 @@
 # Denta Copilot — guía del proyecto
 
-- Ubicación de trabajo: P:\denta-copilot. Package manager: pnpm.
-- Demo administrativa con datos inventados. Nunca conectar la BD de Dentary/ECP.
+- Package manager: pnpm.
+- Demo administrativa con datos inventados. Nunca conectar una base clínica real.
 - Leer docs/PLAN-V1.md y docs/REUTILIZACION.md antes de ampliar alcance.
 - Credenciales solo servidor, .env.local ignorado; nunca imprimir ni copiar secretos a docs.
 - Solo herramientas de lectura/propuesta para el modelo. Confirmación por endpoint y clic humano.
 - Validar horarios, conflictos, versión e idempotencia al ejecutar, no solo al proponer.
 - Persistencia local: un proceso, loopback:3420, cookie firmada, carpetas work/sessions.
 - Para Supabase: proyecto nuevo, Auth, RLS y transacciones antes de publicar; no asumir aislamiento por filtros.
-- Supabase exclusivo: `lyphdzeazqnaepyzzisi` (denta / dentacopilot). Leer `docs/SUPABASE.md`. Todo cliente pasa por `getSupabaseConfig`; nunca sustituirlo por un proyecto de Dentary/ECP.
-- No copiar código corporativo ni activos de EVA/Insight a este repositorio público.
+- Supabase exclusivo: `lyphdzeazqnaepyzzisi` (denta / dentacopilot). Leer `docs/SUPABASE.md`. Todo cliente pasa por `getSupabaseConfig`; nunca sustituirlo por otro proyecto.
+- No copiar código ni activos privados de otros productos a este repositorio público.
 - Verificar API del SDK/Next en node_modules de la versión instalada.
 - Calidad: pnpm check. Reportar local/publicado y límites de verificación.
 
@@ -36,6 +36,24 @@
 - Commits pequeños y descriptivos; diff enfocado, sin temporales, informes, secretos, datos reales ni material privado copiado. Conservar procedencia y licencias cuando corresponda.
 - Una fuente de documentación por decisión. README con comandos reproducibles y límites actuales; distinguir implementado, probado localmente, subido a GitHub y desplegado. No afirmar capacidades a partir de una puntuación o simulación.
 - Para una revisión de calidad, arquitectura o refactor significativo, usar la skill local [denta-quality](.agents/skills/denta-quality/SKILL.md). No exige ceremonias adicionales para cambios triviales.
+
+## Skills
+
+Están en el repositorio para este proyecto. Usar la que coincida con la tarea; no hace falta abrirlas todas.
+
+| Skill                                                                                  | Cuándo                                                          |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [denta-quality](.agents/skills/denta-quality/SKILL.md)                                 | Fronteras de este repo, composición y diagnóstico React         |
+| [web-design-guidelines](.agents/skills/web-design-guidelines/SKILL.md)                 | Revisión de UI: accesibilidad, foco, formularios (Vercel)       |
+| [composition-patterns](.agents/skills/composition-patterns/SKILL.md)                   | Extraer componentes React sin booleanos (Vercel)                |
+| [frontend-design](.agents/skills/frontend-design/SKILL.md)                             | Dirección visual de una pantalla (Anthropic)                    |
+| [webapp-testing](.agents/skills/webapp-testing/SKILL.md)                               | Probar la app en el navegador con Playwright (Anthropic)        |
+| [shadcn](.agents/skills/shadcn/SKILL.md)                                               | Si se introducen componentes de shadcn/ui                       |
+| [tdd](.agents/skills/tdd/SKILL.md)                                                     | Comportamiento nuevo cubierto por pruebas (Matt Pocock)         |
+| [improve-codebase-architecture](.agents/skills/improve-codebase-architecture/SKILL.md) | Refactor amplio de límites (Matt Pocock)                        |
+| [systematic-debugging](.agents/skills/systematic-debugging/SKILL.md)                   | Fallo que hay que localizar antes de parchar (obra/superpowers) |
+
+`pnpm run doctor` ejecuta React Doctor con la versión fijada (`pnpm react:doctor`): sin telemetría, sin score remoto y con el informe en `work/react-doctor`. Hay que usar `run` porque `pnpm doctor` lo reserva el propio pnpm.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

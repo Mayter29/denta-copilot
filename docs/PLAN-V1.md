@@ -6,11 +6,11 @@ Fecha: 27 de octubre de 2026. Estado: primera base funcional local; V1 de compet
 
 Una clínica pequeña pierde tiempo pasando de conversaciones a una agenda: buscar un espacio, aclarar qué cita quiere cambiar la persona, evitar choques y mantener el contexto. Denta Copilot actúa como secretaria administrativa: entiende la solicitud, consulta información verificable y prepara una acción concreta dentro de la aplicación. La persona conserva el control mediante una tarjeta de confirmación.
 
-La demostración usa una clínica y personas inventadas con situaciones realistas. El valor está en resolver operaciones de principio a fin y dejar evidencia del resultado. La búsqueda de conocimiento apoya al agente; el producto principal es la ejecución controlada de acciones. El proyecto funciona de forma independiente y su dominio TypeScript puede servir después para explorar funcionalidades de Dentary.
+La demostración usa una clínica y personas inventadas con situaciones realistas. El valor está en resolver operaciones de principio a fin y dejar evidencia del resultado. La búsqueda de conocimiento apoya al agente; el producto principal es la ejecución controlada de acciones. El proyecto funciona de forma independiente.
 
 ## Hackathon y posicionamiento
 
-Se leyeron las reglas del canal oficial [rules](https://discord.com/channels/1557169028080869426/1557169028626251800) en Chrome el 27 de octubre:
+Se consultaron las reglas publicadas del hackathon el 27 de octubre:
 
 - Trabajo presentado construido durante el evento: 26 de octubre–4 de noviembre de 2026. Deben distinguirse las contribuciones nuevas.
 - Repositorio público en la entrega, video de tres minutos y equipo agregado.
@@ -23,15 +23,15 @@ No se ha enviado inscripción, publicación ni aceptación de términos desde es
 
 ## Stack elegido
 
-| Capa           | Elección                                               | Motivo                                                                          |
-| -------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| Aplicación     | Next.js 16, React 19, TypeScript                       | Compatible con el stack de Dentary, frontend y rutas de servidor en un proyecto |
-| Agente         | AI SDK 7, `ToolLoopAgent`                              | Herramientas tipadas y bucle limitado, sin reimplementar el ciclo del modelo    |
-| Proveedor      | Meta Model API directo; Muse Spark 1.3                 | Usa la clave de la participante. Modelo comprobado mediante `/models`           |
-| Audio inicial  | Muse Voice Transcribe 1.0, archivo WAV                 | Audio → texto editable → mismo flujo y permisos del chat                        |
-| Datos objetivo | Proyecto nuevo de Supabase, Postgres y Auth            | Separación completa de la base real de Dentary                                  |
-| Diseño         | Tokens semánticos derivados de Dentary; interfaz nueva | Continuidad de marca y futura reutilización                                     |
-| Calidad        | Vitest, ESLint, TypeScript y build                     | Cubrir invariantes y compilar antes de integrar                                 |
+| Capa           | Elección                                               | Motivo                                                                       |
+| -------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| Aplicación     | Next.js 16, React 19, TypeScript                       | Frontend y rutas de servidor en un solo proyecto                             |
+| Agente         | AI SDK 7, `ToolLoopAgent`                              | Herramientas tipadas y bucle limitado, sin reimplementar el ciclo del modelo |
+| Proveedor      | Meta Model API directo; Muse Spark 1.3                 | Usa la clave de la participante. Modelo comprobado mediante `/models`        |
+| Audio inicial  | Muse Voice Transcribe 1.0, archivo WAV                 | Audio → texto editable → mismo flujo y permisos del chat                     |
+| Datos objetivo | Proyecto nuevo de Supabase, Postgres y Auth            | Separado de cualquier base clínica real                                      |
+| Diseño         | Tokens semánticos derivados de Dentary; interfaz nueva | Continuidad de marca y futura reutilización                                  |
+| Calidad        | Vitest, ESLint, TypeScript y build                     | Cubrir invariantes y compilar antes de integrar                              |
 
 La elección explícita de AI SDK y Meta directo evita introducir otro runtime de agentes o un gateway externo en este primer corte. `@ai-sdk/openai` es el adaptador del protocolo compatible: las solicitudes van a `api.meta.ai`, no a OpenAI.
 
@@ -84,11 +84,11 @@ Una integración MCP futura expondría el mismo dominio mediante herramientas co
 
 WhatsApp será otro adaptador de entrada/salida. Se debe resolver organización y sede de una fuente confiable, deduplicar webhooks y preservar la misma autorización. No hace falta conectarlo para demostrar que el agente actúa dentro de una aplicación.
 
-## Qué conviene llevar después a Dentary
+## Qué puede reutilizarse
 
 El contrato de resultados y el harness inicial están implementados; ver [evaluaciones y límites](EVALUACIONES.md). Para los siguientes cortes del agente, seguir la [revisión de patrones del taller de Meta](AGENT-PATTERNS.md): resultados verificables, evaluaciones conversacionales, trazas por ejecución y recuperación. El análisis distingue patrones seleccionados de capacidades todavía pendientes.
 
-Las reglas de agenda puras, el contrato de propuesta/confirmación, las pruebas de choques e idempotencia, el manejo de audio a borrador y las evaluaciones del agente. La integración final debe llamar a los servicios y permisos existentes de Dentary; no reemplazar sus restricciones clínicas ni sus políticas multi tenant con las simplificaciones de esta demo.
+Las reglas de agenda puras, el contrato de propuesta/confirmación, las pruebas de choques e idempotencia, el seguimiento con confirmación humana, el manejo de audio a borrador y las evaluaciones del agente. Una integración posterior tiene que usar los permisos del sistema de destino. Esta demo no reemplaza restricciones clínicas ni políticas de varias organizaciones.
 
 ## Guion propuesto del video
 

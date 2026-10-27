@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { availableSlots, decide, propose, seedWorkspace, validateSlot } from './agenda';
-import type { Change } from './types';
+import {
+  availableSlots,
+  decide,
+  hydrateWorkspace,
+  propose,
+  seedWorkspace,
+  validateSlot,
+} from './agenda';
+import type { Change, Workspace } from './types';
 const now = new Date('2026-10-27T07:00:00-06:00');
 const change: Change = {
   action: 'book',
@@ -90,6 +97,142 @@ describe('agenda administrativa', () => {
     { date: '2026-10-28', time: '25:00' },
   ])('rechaza horario/fecha inválidos: %o', (patch) => {
     expect(() => validateSlot(seedWorkspace(), { ...change, ...patch }, now)).toThrow();
+  });
+  const followUp: Change = {
+    action: 'follow_up',
+    patient: 'alguien',
+    appointmentId: 'demo-luis',
+    doctorId: 'valeria',
+    serviceId: 'cleaning',
+    date: '2026-10-28',
+    time: '09:00',
+    message: 'Hola Luis, ¿podés confirmar tu cita de hoy? Te esperamos.',
+  };
+  it('el seguimiento no se envía hasta el clic y un segundo clic no lo duplica', () => {
+    const state = seedWorkspace('2026-10-28');
+    const before = state.patientThread.length;
+    const proposal = propose(state, followUp, now);
+    expect(state.patientThread).toHaveLength(before);
+    expect(state.appointments).toHaveLength(3);
+    expect(proposal.change).toMatchObject({
+      action: 'follow_up',
+      patient: 'Luis Solís (demo)',
+      date: '2026-10-28',
+      time: '10:30',
+      doctorId: 'andres',
+      reason: 'unconfirmed',
+      message: followUp.message,
+    });
+    decide(state, proposal.id, true, now);
+    decide(state, proposal.id, true, now);
+    const sent = state.patientThread.filter((message) => message.proposalId === proposal.id);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.body).toBe(followUp.message);
+    expect(sent[0]?.direction).toBe('outbound');
+    expect(state.audit).toEqual([
+      expect.objectContaining({ action: 'follow_up', appointmentId: 'demo-luis' }),
+    ]);
+    const visit = state.appointments.find((item) => item.id === 'demo-luis');
+    expect(visit).toMatchObject({ time: '10:30', version: 1, attendance: 'unconfirmed' });
+  });
+  it('rechazar o vencer un seguimiento deja el hilo igual', () => {
+    const state = seedWorkspace('2026-10-28');
+    const rejected = propose(state, followUp, now);
+    const expired = propose(
+      state,
+      { ...followUp, message: 'Hola Luis, seguimos a la espera de tu confirmación.' },
+      now,
+    );
+    const before = structuredClone(state.patientThread);
+    decide(state, rejected.id, false, now);
+    decide(state, expired.id, true, new Date(now.getTime() + 600_000));
+    expect(rejected.status).toBe('rejected');
+    expect(expired.status).toBe('expired');
+    expect(state.patientThread).toEqual(before);
+    expect(state.audit).toHaveLength(0);
+  });
+  it('no sigue una cita confirmada, cancelada o con mensaje inválido', () => {
+    const state = seedWorkspace('2026-10-28');
+    expect(() => propose(state, { ...followUp, appointmentId: 'demo-ana' }, now)).toThrow(
+      'confirmed',
+    );
+    const cancellation = propose(
+      state,
+      { ...change, action: 'cancel', appointmentId: 'demo-luis' },
+      now,
+    );
+    decide(state, cancellation.id, true, now);
+    expect(() => propose(state, followUp, now)).toThrow('disponible');
+    const fresh = seedWorkspace('2026-10-28');
+    expect(() => propose(fresh, { ...followUp, message: 'Hola' }, now)).toThrow('12');
+    expect(fresh.patientThread).toHaveLength(2);
+    expect(fresh.audit).toHaveLength(0);
+  });
+  it('permite seguir una inasistencia de un día anterior sin mover la cita', () => {
+    const state = seedWorkspace('2026-10-28');
+    const proposal = propose(
+      state,
+      {
+        ...followUp,
+        appointmentId: 'demo-sofia',
+        message: 'Hola Sofía, lamentamos no verte. ¿Querés elegir otro horario?',
+      },
+      now,
+    );
+    expect(proposal.change.reason).toBe('no_show');
+    expect(proposal.change.date).not.toBe('2026-10-28');
+    decide(state, proposal.id, true, now);
+    const visit = state.appointments.find((item) => item.id === 'demo-sofia');
+    expect(visit).toMatchObject({ attendance: 'no_show', version: 1, status: 'scheduled' });
+    expect(state.patientThread.at(-1)?.body).toContain('Sofía');
+  });
+  it('un cambio de horario confirmado invalida el seguimiento pendiente', () => {
+    const state = seedWorkspace('2026-10-28');
+    const pending = propose(state, followUp, now);
+    const move = propose(
+      state,
+      { ...change, action: 'reschedule', appointmentId: 'demo-luis', time: '11:30' },
+      now,
+    );
+    const before = state.patientThread.length;
+    decide(state, move.id, true, now);
+    expect(() => decide(state, pending.id, true, now)).toThrow('cambió');
+    expect(state.patientThread).toHaveLength(before);
+    expect(state.appointments.find((item) => item.id === 'demo-luis')?.time).toBe('11:30');
+  });
+  it('deduplica el mismo seguimiento y otra sesión no puede confirmarlo', () => {
+    const state = seedWorkspace('2026-10-28');
+    const other = seedWorkspace('2026-10-28');
+    expect(propose(state, followUp, now).id).toBe(propose(state, followUp, now).id);
+    const proposal = state.proposals[0];
+    expect(() => decide(other, proposal.id, true, now)).toThrow('sesión');
+    expect(other.patientThread).toHaveLength(state.patientThread.length);
+    expect(other.audit).toHaveLength(0);
+  });
+  it('completa sesiones guardadas antes de existir el seguimiento', () => {
+    const seeded = seedWorkspace('2026-10-28');
+    const legacy = {
+      ...seeded,
+      patientThread: undefined,
+      appointments: seeded.appointments.map(
+        ({ id, patient, doctorId, serviceId, date, time, duration, status, version }) => ({
+          id,
+          patient,
+          doctorId,
+          serviceId,
+          date,
+          time,
+          duration,
+          status,
+          version,
+        }),
+      ),
+    } as unknown as Workspace;
+    const hydrated = hydrateWorkspace(legacy);
+    expect(hydrated.patientThread).toEqual([]);
+    expect(
+      hydrated.appointments.every((appointment) => appointment.attendance === 'confirmed'),
+    ).toBe(true);
   });
   it('bloquea IDs de profesional y servicio desconocidos', () => {
     expect(() => validateSlot(seedWorkspace(), { ...change, doctorId: 'intruso' }, now)).toThrow();

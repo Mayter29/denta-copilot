@@ -10,7 +10,7 @@ import {
 } from '@/lib/server/workspace';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
-const inputSchema = z.object({ text: z.string().trim().min(1).max(2000) }).strict();
+const inputSchema = z.strictObject({ text: z.string().trim().min(1).max(2000) });
 export async function POST(request: Request) {
   try {
     guardLocal(request, true);
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
         messages: state.messages,
         proposals: state.proposals,
         appointments: state.appointments,
+        patientThread: state.patientThread,
         audit: state.audit,
       });
     });

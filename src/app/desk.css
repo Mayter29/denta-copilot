@@ -1,0 +1,430 @@
+body {
+  font-family: var(--font-sans), 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(900px 420px at 12% -10%, #d8f3f6 0%, transparent 60%),
+    radial-gradient(700px 380px at 100% 0%, #e7f6ea 0%, transparent 55%), var(--app);
+}
+.welcome h2,
+.chat-heading h1,
+.context-heading h2,
+.patient-panel-head h2 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 560;
+}
+.sidebar {
+  background: #0f3c46;
+  border-right: 0;
+  color: #e7f4f6;
+}
+.sidebar .workspace-switch {
+  background: #ffffff12;
+  border-color: #ffffff24;
+  color: #f4fbfc;
+}
+.sidebar .workspace-switch span,
+.sidebar .nav-label,
+.sidebar .user-profile span,
+.sidebar .build-card p {
+  color: #c5dde3;
+}
+.sidebar .nav-item {
+  color: #d7ebee;
+}
+.sidebar .nav-item:hover {
+  background: #ffffff14;
+}
+.sidebar .nav-item.active {
+  background: #1a7487;
+  color: #fff;
+}
+.sidebar .tiny-badge {
+  background: #ffffff22;
+  color: #f4fbfc;
+}
+.sidebar .build-card {
+  background: #ffffff10;
+  border-color: #ffffff22;
+}
+.sidebar .build-card strong,
+.sidebar .build-card span,
+.sidebar .user-profile strong,
+.sidebar .workspace-switch strong {
+  color: #f7fbfc;
+}
+.sidebar .user-profile {
+  border-top-color: #ffffff22;
+}
+.main {
+  background: transparent;
+}
+.topbar,
+.chat-heading {
+  background: #fffc;
+  backdrop-filter: blur(8px);
+}
+.welcome {
+  margin-top: 28px;
+}
+.welcome h2 {
+  font-size: clamp(32px, 3vw, 46px);
+  letter-spacing: -1.2px;
+  line-height: 1.08;
+  max-width: 16ch;
+}
+.welcome h2 span {
+  display: block;
+  margin-top: 8px;
+  color: #3d6570;
+  font-size: 0.58em;
+  letter-spacing: -0.4px;
+  line-height: 1.25;
+}
+.suggestions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.suggestions button {
+  min-height: 132px;
+  background: #fffc;
+}
+.context-panel {
+  background: #f8fcfd;
+  min-height: 0;
+}
+.context-body {
+  min-height: 0;
+  overflow: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.panel-overview .context-body {
+  overflow: hidden;
+}
+.panel-overview .schedule-pane {
+  max-height: 48%;
+  overflow: auto;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.panel-overview .patient-panel {
+  flex: 1;
+  min-height: 220px;
+}
+.context-tabs {
+  gap: 4px;
+  min-height: 52px;
+  position: sticky;
+  top: 0;
+  background: #f8fcfd;
+  z-index: 1;
+  overflow-x: auto;
+}
+.context-tabs button {
+  border-radius: 999px;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+.context-tabs button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.context-heading {
+  margin: 16px 0 12px;
+}
+.context-heading h2,
+.patient-panel-head h2 {
+  font-size: 22px;
+  letter-spacing: -0.6px;
+  margin-top: 4px;
+}
+.follow-queue {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+.follow-queue h3 {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.follow-queue ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.follow-queue li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  font-size: 12px;
+}
+.follow-queue li span:last-child {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 11px;
+}
+.attend {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.attend-confirmed {
+  color: #166534;
+  background: #dcfce7;
+}
+.attend-unconfirmed {
+  color: #92400e;
+  background: #fef3c7;
+}
+.attend-no_show {
+  color: #991b1b;
+  background: #fee2e2;
+}
+.appointment-body .attend {
+  margin-top: 10px;
+}
+.patient-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-top: 12px;
+}
+.patient-panel-head p {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+.patient-switch {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+.patient-switch button {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--secondary);
+}
+.patient-switch button[aria-pressed='true'] {
+  background: #0f3c46;
+  color: #fff;
+  border-color: #0f3c46;
+}
+.thread-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0f3c46;
+  color: #f4fbfc;
+  border-radius: 14px 14px 0 0;
+  padding: 10px 12px;
+}
+.thread-head strong {
+  display: block;
+  font-size: 14px;
+}
+.thread-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #1a7487;
+  font-weight: 700;
+}
+.thread {
+  background: #e7f2f1;
+  border: 1px solid #d3e4e2;
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 160px;
+  overflow: auto;
+  flex: 1;
+}
+.bubble {
+  max-width: 88%;
+  border-radius: 14px;
+  padding: 8px 10px 6px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.bubble p {
+  margin: 0;
+}
+.bubble time {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  opacity: 0.75;
+}
+.bubble.inbound {
+  align-self: flex-start;
+  background: #fff;
+  color: #102027;
+  border-bottom-left-radius: 4px;
+}
+.bubble.outbound {
+  align-self: flex-end;
+  background: #d8f3ea;
+  color: #102027;
+  border-bottom-right-radius: 4px;
+}
+.thread-empty {
+  margin: auto;
+  text-align: center;
+  color: var(--secondary);
+  font-size: 13px;
+  max-width: 28ch;
+}
+.patient-quote {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  background: #fff;
+  border-radius: 0 10px 10px 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.patient-quote span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.loading-state,
+.empty-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--secondary);
+  padding: 28px 4px;
+  font-size: 14px;
+}
+.mobile-nav {
+  display: none;
+}
+.reference-pane {
+  padding-bottom: 12px;
+}
+@media (max-width: 930px) {
+  .sidebar .nav-item {
+    font-size: 0;
+  }
+  .sidebar .tiny-badge {
+    display: none;
+  }
+  .welcome h2 {
+    max-width: none;
+  }
+  .panel-overview .schedule-pane {
+    max-height: none;
+  }
+  .panel-overview .context-body {
+    overflow: auto;
+  }
+}
+@media (max-width: 760px) {
+  .app-shell,
+  .app-shell.context-hidden {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: 100dvh;
+  }
+  .main {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .sidebar {
+    display: none;
+  }
+  .mobile-nav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 8px;
+    background: #fff;
+    border-top: 1px solid var(--line);
+  }
+  .mobile-nav button {
+    border: 0;
+    background: var(--surface-alt);
+    border-radius: 10px;
+    min-height: 42px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .mobile-nav button[aria-pressed='true'] {
+    background: #0f3c46;
+    color: #fff;
+  }
+  .app-shell.mobile-chat .context-panel {
+    display: none;
+  }
+  .app-shell.mobile-context .main {
+    display: none;
+  }
+  .context-panel {
+    position: static;
+    width: auto;
+    box-shadow: none;
+    top: auto;
+  }
+  .suggestions {
+    grid-template-columns: 1fr;
+  }
+  .chat-heading {
+    padding: 12px 16px;
+  }
+  .chat-heading h1 {
+    font-size: 22px;
+  }
+  .welcome {
+    margin: 4px auto 8px;
+  }
+  .welcome h2 {
+    font-size: 30px;
+  }
+  .welcome > p {
+    margin-top: 8px;
+    line-height: 1.45;
+  }
+  .suggestions {
+    margin-top: 12px;
+    gap: 8px;
+  }
+  .suggestions button {
+    min-height: 0;
+    padding: 12px;
+  }
+  .trust-line {
+    margin-top: 8px;
+  }
+  .composer-area {
+    padding: 8px 12px 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .topbar,
+  .chat-heading {
+    backdrop-filter: none;
+  }
+}

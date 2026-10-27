@@ -205,13 +205,11 @@ it('UI de micrófono conserva el borrador, bloquea enviar al grabar y nunca abre
   );
   expect(document.querySelector('input[type=file]')).toBeNull();
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Grabar con micrófono' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Record with microphone' }));
   });
-  expect(screen.getByRole('button', { name: 'Enviar mensaje' }).hasAttribute('disabled')).toBe(
-    true,
-  );
+  expect(screen.getByRole('button', { name: 'Send message' }).hasAttribute('disabled')).toBe(true);
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Detener y transcribir' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and transcribe' }));
   });
   expect(change).toHaveBeenCalledWith('Texto previo\nSolicitud ficticia transcrita');
   expect(send).not.toHaveBeenCalled();
