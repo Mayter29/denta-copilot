@@ -18,6 +18,8 @@ Scaffolding, interfaz de Denta Copilot, semilla ficticia, dominio de agenda, val
 
 ## Límites de la reutilización
 
+Compositor actualizado: se tomó la captura aportada por la usuaria y se consultó el patrón visual de la barra de EVA como referencia. Se escribió CSS/JSX propio con la paleta Dentary y los iconos Lucide ya instalados. No se incorporaron código ni activos de EVA; se conserva audio WAV a borrador, sin añadir voz en vivo.
+
 Actualización de marca: se recuperaron los SVG originales de Dentary y la mascota Denta V2 del paquete confirmado por el usuario. Están preparados en `public/brand` y en la vista `/brand-review`; son activos preexistentes de su autoría. Ver [inventario y recomendación](BRANDING.md). La interfaz principal conserva su identidad actual.
 
 No se importaron datos reales de pacientes, empleados, clínicas, contactos o agendas. No se copiaron `.env`, secretos, credenciales ni conexiones de otros proyectos. El único secreto de proveedor configurado es la clave Meta indicada por la participante en `.env.local`, excluida de Git.

@@ -4,6 +4,7 @@ import Markdown from 'react-markdown';
 import Link from 'next/link';
 import {
   ArrowUp,
+  AudioLines,
   ArrowUpRight,
   CalendarDays,
   CheckCheck,
@@ -12,7 +13,6 @@ import {
   Layers2,
   LoaderCircle,
   MessageSquare,
-  Paperclip,
   PanelRightClose,
   PanelRightOpen,
   ShieldCheck,
@@ -349,7 +349,11 @@ export function CopilotWorkspace() {
               {!state ? <button onClick={() => void load()}>Reintentar conexión</button> : null}
             </div>
           ) : null}
-          <form className="composer" onSubmit={send}>
+          <form
+            className={`composer${busy ? ' composer-busy' : ''}`}
+            onSubmit={send}
+            aria-busy={busy}
+          >
             <label htmlFor="chat-draft" className="sr-only">
               Mensaje al copiloto
             </label>
@@ -359,7 +363,7 @@ export function CopilotWorkspace() {
               value={draft}
               maxLength={2000}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="¿Qué resolvemos hoy en la clínica?"
+              placeholder="Preguntame algo o prepará una cita…"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
@@ -367,29 +371,29 @@ export function CopilotWorkspace() {
                 }
               }}
             />
-            <div className="composer-bottom">
-              <div className="composer-hint">
-                <input
-                  ref={audioInput}
-                  type="file"
-                  accept="audio/wav,.wav"
-                  className="sr-only"
-                  aria-label="Seleccionar audio WAV ficticio"
-                  onChange={(e) => void transcribe(e.target.files?.[0])}
-                />
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Adjuntar audio WAV"
-                  title="Audio ficticio: WAV mono, 16 kHz, 16 bits, máximo 60 s. Se envía a Meta para transcribir a un borrador editable."
-                  disabled={busy || !state}
-                  onClick={() => audioInput.current?.click()}
-                >
-                  <Paperclip size={16} />
-                </button>
-                <Command size={13} />
-                <span>Enter para enviar · Shift + Enter para nueva línea</span>
-              </div>
+            <div className="composer-actions">
+              <input
+                ref={audioInput}
+                type="file"
+                accept="audio/wav,.wav"
+                className="sr-only"
+                aria-label="Seleccionar audio WAV ficticio"
+                onChange={(e) => void transcribe(e.target.files?.[0])}
+              />
+              <button
+                type="button"
+                className="composer-audio"
+                aria-label="Adjuntar audio WAV"
+                title="Audio ficticio: WAV mono, 16 kHz, 16 bits, máximo 60 s. Se envía a Meta para transcribir a un borrador editable."
+                disabled={busy || !state}
+                onClick={() => audioInput.current?.click()}
+              >
+                {transcribing ? (
+                  <LoaderCircle size={19} className="spinner" />
+                ) : (
+                  <AudioLines size={20} />
+                )}
+              </button>
               <button
                 className="send-button"
                 type="submit"
@@ -400,6 +404,12 @@ export function CopilotWorkspace() {
               </button>
             </div>
           </form>
+          <div className="composer-hint">
+            <span>
+              <Command size={12} /> Enter para enviar · Shift + Enter para nueva línea
+            </span>
+            <span>Audio a borrador</span>
+          </div>
           <p className="composer-disclaimer">
             <ShieldCheck size={12} />
             Solo datos ficticios. Revisá cada propuesta antes de confirmar.
