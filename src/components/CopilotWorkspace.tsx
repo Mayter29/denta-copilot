@@ -1,7 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import Markdown from 'react-markdown';
-import Link from 'next/link';
 import {
   ArrowUp,
   AudioLines,
@@ -17,12 +16,13 @@ import {
   PanelRightOpen,
   ShieldCheck,
   Sparkles,
-  Stethoscope,
   Zap,
 } from 'lucide-react';
 import type { Workspace } from '@/lib/domain/types';
 import { AgendaPanel } from './AgendaPanel';
 import { ProposalCard } from './ProposalCard';
+import { DentaryBrand } from './brand/DentaryBrand';
+import { DentaMascot } from './brand/DentaMascot';
 
 type View = Workspace & { today: string; modelReady: boolean };
 const suggestions = [
@@ -165,14 +165,7 @@ export function CopilotWorkspace() {
   return (
     <div className={`app-shell ${contextOpen ? '' : 'context-hidden'}`}>
       <nav className="sidebar" aria-label="Navegación principal">
-        <Link className="brand" href="/" aria-label="Denta Copilot, inicio">
-          <div className="brand-symbol">
-            <Stethoscope size={23} />
-          </div>
-          <div>
-            Denta<span>copilot</span>
-          </div>
-        </Link>
+        <DentaryBrand placement="sidebar" />
         <div className="workspace-switch">
           <div className="clinic-avatar">B</div>
           <div>
@@ -226,10 +219,7 @@ export function CopilotWorkspace() {
       </nav>
       <main className="main">
         <header className="topbar">
-          <div className="breadcrumbs">
-            Espacio de trabajo <span>/</span>
-            <strong>Copiloto</strong>
-          </div>
+          <DentaryBrand placement="header" />
           <div className="topbar-actions">
             <span className="demo-badge">DEMO</span>
             <button
@@ -244,10 +234,10 @@ export function CopilotWorkspace() {
         </header>
         <div className="chat-heading">
           <div className="copilot-avatar">
-            <Sparkles size={22} />
+            <DentaMascot size={38} mood={busy ? 'pensando' : 'neutral'} />
           </div>
           <div>
-            <h1>Tu copiloto de recepción</h1>
+            <h1>Denta, tu copiloto de recepción</h1>
             <p>
               <span className="status-dot" />
               {state?.modelReady
@@ -293,7 +283,7 @@ export function CopilotWorkspace() {
               {state.messages.map((message) => (
                 <article key={message.id} className={`message ${message.role}`}>
                   <div className="message-avatar">
-                    {message.role === 'assistant' ? <Sparkles size={17} /> : 'M'}
+                    {message.role === 'assistant' ? <DentaMascot size={29} blink={false} /> : 'M'}
                   </div>
                   <div>
                     <span className="message-author">

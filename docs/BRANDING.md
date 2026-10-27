@@ -1,6 +1,6 @@
 # Dentary y Denta · revisión de reutilización
 
-Fecha: 27 de octubre de 2026. Estado: activos recuperados y propuesta visible en `/brand-review`. La pantalla principal no cambia todavía.
+Fecha: 27 de octubre de 2026. Estado: identidad integrada en la pantalla principal; `/brand-review` conserva la lámina de revisión.
 
 ## Hallazgos
 
@@ -36,4 +36,12 @@ La animación debe ser discreta: transición de pose y parpadeo ocasional. Sin p
 
 Vista contextual del chat con los activos originales, cuatro estados seleccionables, seis expresiones a distintos tamaños y logos sobre fondos claro/oscuro. Los mensajes y la tarjeta son ejemplos estáticos; los botones solo cambian la expresión y su texto. No ejecuta herramientas, solicitudes al modelo ni escrituras de agenda.
 
-Se registran como activos preexistentes del usuario para distinguirlos de la funcionalidad nueva del hackathon. La integración definitiva en la pantalla principal es el siguiente cambio, una vez elegida esta dirección visual.
+Se registran como activos preexistentes del usuario para distinguirlos de la funcionalidad nueva del hackathon.
+
+## Integración en la aplicación
+
+Por indicación de la usuaria, el wordmark original de Dentary identifica la barra lateral amplia. En la barra lateral compacta se muestra el isotipo. La cabecera conserva la marca visible también en móvil con el isotipo y «Denta Copilot · de Dentary». `DentaryBrand` concentra estas variantes y sus estilos, sin duplicar los vectores.
+
+El isotipo también se configura como favicon SVG y el título de la pestaña pasa a «Denta Copilot · Dentary». Denta V2 reemplaza el avatar genérico de la cabecera y los mensajes del asistente. La cabecera usa neutral y pensando según el estado ocupado existente; no interpreta el texto del modelo para mostrar éxito ni cambia el flujo de confirmación.
+
+Verificado en navegador: logos cargados desde los SVG existentes, cabecera/avatar/mensajes y variantes de escritorio/móvil. No se modifica la geometría ni se generan logos nuevos. La vista de revisión sigue siendo un ejemplo estático, independiente de la agenda.
