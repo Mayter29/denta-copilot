@@ -13,9 +13,7 @@ export function proxy(request: NextRequest) {
     login.searchParams.set('next', pathname);
     return NextResponse.redirect(login);
   }
-  const headers = new Headers(request.headers);
-  headers.set('x-pathname', pathname);
-  return NextResponse.next({ request: { headers } });
+  return NextResponse.next();
 }
 
 export const config = {

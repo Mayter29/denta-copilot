@@ -9,7 +9,7 @@
 - API: `https://lyphdzeazqnaepyzzisi.supabase.co`.
 - [Configuración del proyecto](https://supabase.com/dashboard/project/lyphdzeazqnaepyzzisi/settings/general).
 
-Se verificó la identidad en la sesión de Chrome de la participante el 27 de octubre de 2026. Se configuró únicamente la clave **publicable** de este proyecto en `.env.local`. No se reveló ni copió la clave secreta. El 29 de octubre se verificó además el MCP `denta-supabase`, restringido a esta referencia y en solo lectura; el conector anterior sigue sin permisos. El estado del esquema y la migración están en [DATABASE.md](DATABASE.md).
+Se verificó la identidad en la sesión de Chrome de la participante el 27 de octubre de 2026. Se configuró inicialmente la clave **publicable** de este proyecto en `.env.local`. El 30 de octubre se configuró también la clave secreta existente, exclusivamente en el servidor y fuera de Git, sin crear ni rotar claves. Se verificó su acceso mediante una consulta administrativa de lectura de la cuenta de prueba y se reinició el servidor local. El 29 de octubre se verificó además el MCP `denta-supabase`, restringido a esta referencia y en solo lectura; el conector anterior sigue sin permisos. El estado del esquema y la migración están en [DATABASE.md](DATABASE.md).
 
 ## Configuración y protección de destino
 
@@ -27,12 +27,14 @@ La raíz de metadatos de PostgREST requiere una clave secreta en este proyecto. 
 
 ## Alcance de este avance
 
-Conectividad, migración inicial, ingreso con Auth y adaptador de persistencia implementados para el proyecto exclusivo. El ingreso se comprobó en el navegador con la cuenta de prueba. La escritura desde la app todavía requiere configurar la clave de servidor.
+Conectividad, migración inicial, ingreso con Auth y adaptador de persistencia implementados para el proyecto exclusivo. El ingreso se comprobó en el navegador con la cuenta de prueba. La clave de servidor ya está configurada localmente como `SUPABASE_SERVICE_ROLE_KEY`; admite la clave secreta moderna. `src/lib/supabase/service.ts` crea el cliente privilegiado solo en el servidor, con el mismo control de destino.
 
 La demostración explícita `/demo` mantiene su agenda y chat en `work/sessions`. El área `/app` verifica sesión y muestra un bloqueo explícito cuando falta la clave de escritura: nunca cae silenciosamente al almacenamiento local. Las credenciales de prueba están únicamente en `P:\denta-copilot\secrets`, ignorado por Git.
 
+Con la configuración cargada se comprobaron ingreso, selección manual de Sede Central, apertura del copiloto, lectura de agenda y cierre/reingreso en Chrome. Se corrigió un bucle al seleccionar sede: el layout compartido ya no decide redirecciones según un pathname que Next puede conservar entre navegaciones; el guard de selección vive en la página del copiloto, como en agenda y conocimiento. `pnpm check`: 189 pruebas en 36 archivos, lint, tipos y build aprobados. React Doctor: los mismos ocho avisos previos, sin avisos nuevos en los archivos modificados. No se confirmó ninguna reserva remota en este corte.
+
 El 30 de octubre se cargó atómicamente la semilla controlada: Clínica Brisa Demo, Sede Central, dos profesionales, dos servicios, tres fuentes y tres citas ficticias futuras dentro del horario. La cuenta de prueba recibió el rol `scheduler` únicamente en esa clínica/sede. No se cargaron los fixtures del harness ni se crearon usuarios adicionales o buckets. La semilla y la asignación ya están aplicadas: no repetirlas. Detalle de pruebas y límites en [VALIDACION.md](VALIDACION.md).
 
-El [estado de la migración y su verificación remota](DATABASE.md) mantiene el detalle de versión, RLS, permisos y límites. Pendiente: configurar la clave secreta fuera del chat y probar el recorrido remoto completo y sesiones reales de organizaciones/sedes diferentes. Una sesión verificada y un catálogo cargado no certifican la reserva remota ni el aislamiento entre dos usuarios. Nunca copiar conexiones o datos de Dentary/ECP.
+El [estado de la migración y su verificación remota](DATABASE.md) mantiene el detalle de versión, RLS, permisos y límites. Pendiente: probar el recorrido remoto completo y sesiones reales de organizaciones/sedes diferentes. Una sesión verificada y un catálogo cargado no certifican la reserva remota ni el aislamiento entre dos usuarios. Nunca copiar conexiones o datos de Dentary/ECP.
 
 Referencias: [inicialización del SDK](https://supabase.com/docs/reference/javascript/initializing) y [tipos de claves](https://supabase.com/docs/guides/getting-started/api-keys).

@@ -114,9 +114,9 @@ La prueba usa un sustituto mínimo de `auth.users` y `auth.uid()` para simular r
 
 La fuente guarda versiones y huellas de contenido con índice léxico español; falta implementar selección de versión vigente y recuperación desde la app. No se incorporan embeddings ni otro servicio por anticipado.
 
-## Activar la persistencia de la app (pendiente de clave administrativa)
+## Configuración de persistencia de la app
 
-La configuración actual solo tiene la clave publicable; no hay clave administrativa local y no se inventa ninguna. Sin ella, la app conserva explícitamente la demo local y rechaza el modo conectado con 503, sin fallback silencioso.
+El 30 de octubre se configuró la clave secreta existente del proyecto exclusivo, solo en `.env.local`, ignorado por Git. Se verificó el acceso administrativo con una lectura de la cuenta de prueba y se reinició `pnpm dev`. No se crearon ni rotaron claves. Si falta la configuración, la app rechaza el modo conectado sin fallback silencioso. Pasos reproducibles:
 
 1. Obtener la clave secreta desde el dashboard del proyecto `lyphdzeazqnaepyzzisi` (Settings → API → Secret key). Nunca usar una clave de otro proyecto ni prefijarla con `NEXT_PUBLIC_`.
 2. Guardarla solo en `P:\denta-copilot\.env.local` como `SUPABASE_SERVICE_ROLE_KEY=<valor>`. El archivo está ignorado por Git. No imprimirla ni pegarla en el chat.
@@ -125,7 +125,7 @@ La configuración actual solo tiene la clave publicable; no hay clave administra
 5. La asignación de la cuenta de prueba mediante `supabase/seeds/grant-membership.sql` ya está aplicada. En otro entorno, reemplazar el marcador solamente durante la ejecución, nunca en un commit. `pnpm db:check` comprueba ambos scripts con un actor ficticio en una transacción que se revierte.
 6. Verificar: ingresar en la app, elegir la sede, consultar disponibilidad, pedir reserva, confirmar con clic, comprobar el comprobante y recargar para confirmar persistencia.
 
-Verificado localmente en este corte: Auth con sesión firmada (15 pruebas), adaptador RPC con actor de sesión (5 pruebas), mapeo de vista conectada y husos horarios (4 pruebas), agente conectado con publicación verificada y aborto con descarte (3 pruebas), `pnpm db:check` con concurrencia real. Pendiente remoto: login E2E con la cuenta de prueba, recorrido completo contra Supabase y reintentos/idempotencia entre procesos.
+Verificado localmente en este corte: Auth con sesión firmada (15 pruebas), adaptador RPC con actor de sesión (5 pruebas), mapeo de vista conectada y husos horarios (4 pruebas), agente conectado con publicación verificada y aborto con descarte (3 pruebas), `pnpm db:check` con concurrencia real. Login con la cuenta de prueba verificado en navegador. Pendiente remoto: recorrido completo de reserva contra Supabase y reintentos/idempotencia entre procesos.
 
 ## Acceso para aplicar la migración
 
