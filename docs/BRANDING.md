@@ -18,7 +18,8 @@ La mascota correcta fue confirmada por el usuario: `C:\Users\mayte\Downloads\den
 | `public/brand/dentary/dentary-horizontal-light.svg` | Mismo path bajo `public/dentary` en `origin/master` | Wordmark sobre fondo claro                                      |
 | `public/brand/dentary/dentary-horizontal-dark.svg`  | Mismo path bajo `public/dentary` en `origin/master` | Wordmark sobre fondo oscuro                                     |
 | `public/brand/denta/denta-*.svg`                    | `v2/svg` del paquete confirmado                     | Seis expresiones originales, archivos conservados sin modificar |
-| `src/components/brand/DentaMascot.tsx`              | `v2/DentaMascot.tsx` del paquete confirmado         | Componente adaptado a los tokens y CSS Modules de este proyecto |
+| `src/components/brand/DentaMascot.tsx`                       | `v2/DentaMascot.tsx` del paquete confirmado                    | Componente adaptado a los tokens y CSS Modules de este proyecto |
+| `src/components/brand/DentaMascot.tsx` + `denta/` (rig)      | Módulo gráfico de Odontoser, commit `5db8cfcf`, a pedido explícito del propietario | Misma silueta, volumen, luz y ojos con rig procedural (1 RAF por instancia, refs, pausa fuera de pantalla/tab, reduced motion, IDs únicos). Solo se aisló el módulo gráfico: sin AssistantView, lógica clínica, permisos, hooks de expediente, datos ni conexiones. `DentaAvatar` adapta presencia (escucha con nivel real, transcripción, consulta, éxito tras comprobante); el historial usa instancias pausadas |
 
 Se conservó la geometría V2, sus poses y trazos reforzados para tamaños menores a 40 px. Se extrajeron las animaciones a CSS Modules, se sustituyeron las clases Tailwind del proyecto anterior por `--accent` y se mantuvo `prefers-reduced-motion`. Los dibujos decorativos se ocultan de lectores de pantalla; el mensaje contiguo comunica el estado.
 
