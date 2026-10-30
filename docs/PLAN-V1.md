@@ -56,19 +56,19 @@ El contexto conversacional se lee del servidor, con una ventana de 18 mensajes p
 
 ## Estado por corte
 
-| Corte                          | Estado                                  | Criterio de salida                                                                  |
-| ------------------------------ | --------------------------------------- | ----------------------------------------------------------------------------------- |
-| 0. Base segura y narrativa     | Hecho local                             | Entornos ignorados, dependencias fijadas, idea y procedencia documentadas           |
-| 1. Chat y agenda               | Hecho local                             | Meta real consulta, propone, confirma y actualiza datos ficticios                   |
-| 2. Conocimiento y dictado      | Micrófono y WAV a borrador locales      | Pendientes: validar hardware/voces/acentos y dispositivos del piloto                |
-| 3. Supabase                    | Esquema remoto aplicado; Auth y persistencia listas sin clave | Clave secreta, semillas, recorrido E2E remoto y RLS con JWT reales probados |
-| 4. Calidad de conversación     | Contrato, evals, progreso real y latencia medida | Pendientes: recuperación duradera y presupuesto por sesión. Streaming de tokens descartado deliberadamente: el texto verificable vive en `submitResult` |
-| 5. Voz en vivo e integraciones | Verificado: STT realtime por WS; sin TTS/WebRTC | Puente WS dedicado con presupuesto, o mantener dictado por turnos; MCP/API si aporta a la demo |
-| 6. Entrega                     | Pendiente                               | Demo desplegada, QA, aportes identificables, repo público y video de tres minutos   |
+| Corte                          | Estado                                                        | Criterio de salida                                                                                                                                      |
+| ------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Base segura y narrativa     | Hecho local                                                   | Entornos ignorados, dependencias fijadas, idea y procedencia documentadas                                                                               |
+| 1. Chat y agenda               | Hecho local                                                   | Meta real consulta, propone, confirma y actualiza datos ficticios                                                                                       |
+| 2. Conocimiento y dictado      | Micrófono y WAV a borrador locales                            | Pendientes: validar hardware/voces/acentos y dispositivos del piloto                                                                                    |
+| 3. Supabase                    | Esquema remoto aplicado; Auth y persistencia listas sin clave | Clave secreta, semillas, recorrido E2E remoto y RLS con JWT reales probados                                                                             |
+| 4. Calidad de conversación     | Contrato, evals, progreso real y latencia medida              | Pendientes: recuperación duradera y presupuesto por sesión. Streaming de tokens descartado deliberadamente: el texto verificable vive en `submitResult` |
+| 5. Voz en vivo e integraciones | Verificado: STT realtime por WS; sin TTS/WebRTC               | Puente WS dedicado con presupuesto, o mantener dictado por turnos; MCP/API si aporta a la demo                                                          |
+| 6. Entrega                     | Pendiente                                                     | Demo desplegada, QA, aportes identificables, repo público y video de tres minutos                                                                       |
 
 ## Diseño de la integración Supabase
 
-Proyecto exclusivo confirmado: **denta**, organización **dentacopilot**, referencia `lyphdzeazqnaepyzzisi`. URL y clave publicable configuradas localmente, cliente preparado y acceso a la API Auth comprobado. La configuración rechaza otros destinos. Ver `docs/SUPABASE.md`. Todavía no se ejecuta SQL remoto ni se migra la persistencia de agenda.
+Proyecto exclusivo confirmado: **denta**, organización **dentacopilot**, referencia `lyphdzeazqnaepyzzisi`. URL y clave publicable configuradas localmente, migración y semilla controlada aplicadas, ingreso real comprobado. La configuración rechaza otros destinos. El área conectada exige clave de escritura de servidor; sin ella muestra un bloqueo explícito. Ver [estado y límites actuales](SUPABASE.md). `/demo` conserva almacenamiento local.
 
 Modelo propuesto: organizaciones/sedes, membresías, profesionales, servicios, citas, conversaciones, mensajes, propuestas, eventos de auditoría y documentos/fragmentos de conocimiento. Todas las filas de una organización llevan `tenant_id`. RLS debe comprobar pertenencia desde `auth.uid()`, y las claves foráneas deben impedir referencias cruzadas entre organizaciones.
 

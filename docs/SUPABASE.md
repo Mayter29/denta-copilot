@@ -27,10 +27,12 @@ La raíz de metadatos de PostgREST requiere una clave secreta en este proyecto. 
 
 ## Alcance de este avance
 
-Conectividad configurada y migración inicial aplicada al proyecto exclusivo. Esto no equivale todavía a login de usuarios ni persistencia de la aplicación en Supabase.
+Conectividad, migración inicial, ingreso con Auth y adaptador de persistencia implementados para el proyecto exclusivo. El ingreso se comprobó en el navegador con la cuenta de prueba. La escritura desde la app todavía requiere configurar la clave de servidor.
 
-La agenda y el chat siguen en `work/sessions`. Ya existen las tablas, políticas y RPC del esquema inicial remoto; no se cargaron organizaciones, citas ni fixtures. Se creó una cuenta de prueba por el dashboard de Auth y se verificó ingreso con contraseña, identidad mediante `getUser` y cierre de esa sesión de prueba. Las credenciales están únicamente en `P:\denta-copilot\secrets`, ignorado por Git; no se guardaron tokens. La cuenta aún no tiene membresías ni acceso a una organización/sede de la demo. No se crearon buckets. Esta comprobación de Auth no sustituye las pruebas pendientes de autorización/RLS entre usuarios ni el login de la aplicación, todavía no implementado.
+La demostración explícita `/demo` mantiene su agenda y chat en `work/sessions`. El área `/app` verifica sesión y muestra un bloqueo explícito cuando falta la clave de escritura: nunca cae silenciosamente al almacenamiento local. Las credenciales de prueba están únicamente en `P:\denta-copilot\secrets`, ignorado por Git.
 
-El [estado de la migración y su verificación remota](DATABASE.md) mantiene el detalle de versión, RLS, permisos y límites. La app ya implementa ingreso con Auth, sesión de servidor firmada, contexto autorizado de org/sede y el adaptador de persistencia con `p_actor` de sesión; ver habilitación en [DATABASE.md](DATABASE.md). Pendiente: configurar la clave secreta fuera del chat, cargar datos ficticios controlados y probar sesiones reales de organizaciones/sedes diferentes. Nunca copiar conexiones o datos de Dentary/ECP.
+El 30 de octubre se cargó atómicamente la semilla controlada: Clínica Brisa Demo, Sede Central, dos profesionales, dos servicios, tres fuentes y tres citas ficticias futuras dentro del horario. La cuenta de prueba recibió el rol `scheduler` únicamente en esa clínica/sede. No se cargaron los fixtures del harness ni se crearon usuarios adicionales o buckets. La semilla y la asignación ya están aplicadas: no repetirlas. Detalle de pruebas y límites en [VALIDACION.md](VALIDACION.md).
+
+El [estado de la migración y su verificación remota](DATABASE.md) mantiene el detalle de versión, RLS, permisos y límites. Pendiente: configurar la clave secreta fuera del chat y probar el recorrido remoto completo y sesiones reales de organizaciones/sedes diferentes. Una sesión verificada y un catálogo cargado no certifican la reserva remota ni el aislamiento entre dos usuarios. Nunca copiar conexiones o datos de Dentary/ECP.
 
 Referencias: [inicialización del SDK](https://supabase.com/docs/reference/javascript/initializing) y [tipos de claves](https://supabase.com/docs/guides/getting-started/api-keys).
