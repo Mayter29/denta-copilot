@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { propose, seedWorkspace } from '../domain/agenda';
+import { propose, proposeBatchReschedule, seedWorkspace } from '../domain/agenda';
 import type { Workspace } from '../domain/types';
 import { POST as confirm } from '../../app/api/proposals/route';
+import { POST as patientReply } from '../../app/api/patient-reply/route';
 import { POST as transcribe } from '../../app/api/transcribe/route';
 import { withWorkspace } from './workspace';
 
@@ -99,6 +100,44 @@ it('el seguimiento confirmado devuelve el hilo simulado sin alterar la agenda ni
   expect((await repeated.json()).patientThread).toEqual(body.patientThread);
   expect(state.appointments).toEqual(before);
   expect(state.audit).toHaveLength(1);
+});
+it('el lote se confirma por batchId y el doble clic no duplica', async () => {
+  const batch = proposeBatchReschedule(
+    memory.state!,
+    { doctorId: 'valeria', date: '2026-10-27', motivo: 'La doctora no viene hoy.' },
+    now,
+  );
+  expect(batch.proposals).toHaveLength(1);
+  const first = await confirm(request({ batchId: batch.batchId, approved: true }));
+  expect(first.status).toBe(200);
+  const body = await first.json();
+  expect(body.batch.confirmed).toHaveLength(1);
+  expect(body.batch.failed).toEqual([]);
+  const second = await confirm(request({ batchId: batch.batchId, approved: true }));
+  expect((await second.json()).batch.confirmed).toEqual([]);
+  expect(memory.state!.audit).toHaveLength(1);
+  expect(memory.state!.appointments.find((a) => a.id === 'demo-ana')?.date).not.toBe('2026-10-27');
+});
+it('la respuesta simulada confirma asistencia sin mover la cita', async () => {
+  const response = await patientReply(request({ appointmentId: 'demo-luis', reply: 'confirm' }));
+  expect(response.status).toBe(200);
+  const body = await response.json();
+  expect(body.summary).toContain('confirmó');
+  expect(body.appointments[0]).toMatchObject({ id: 'demo-luis', attendance: 'confirmed' });
+  expect(memory.state!.appointments.find((a) => a.id === 'demo-luis')).toMatchObject({
+    date: '2026-10-27',
+    time: '10:30',
+  });
+  expect((memory.state!.patientThread ?? []).at(-1)).toMatchObject({
+    appointmentId: 'demo-luis',
+    direction: 'inbound',
+  });
+  const reschedule = await patientReply(request({ appointmentId: 'demo-ana', reply: 'reschedule' }));
+  expect(reschedule.status).toBe(200);
+  expect(memory.state!.appointments.find((a) => a.id === 'demo-ana')).toMatchObject({
+    date: '2026-10-27',
+    status: 'scheduled',
+  });
 });
 it('audio devuelve solo borrador: no abre chat ni propone ni confirma', async () => {
   vi.stubEnv('META_API_KEY', 'fake-test-key');

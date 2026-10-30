@@ -22,6 +22,10 @@ export type Change = {
   time: string;
   message?: string;
   reason?: Exclude<Attendance, 'confirmed'>;
+  /** Groups reschedules created by one batch operation. Survives only in local file sessions. */
+  batchId?: string;
+  /** Human reason for the batch, shown on the grouped card. */
+  motivo?: string;
 };
 export type PatientMessage = {
   id: string;
@@ -67,10 +71,14 @@ export type Workspace = {
 export const doctors = [
   { id: 'valeria', name: 'Dra. Valeria Soto', specialty: 'Odontología general' },
   { id: 'andres', name: 'Dr. Andrés Vega', specialty: 'Odontología general' },
+  { id: 'camila', name: 'Dra. Camila Reyes', specialty: 'Odontología general' },
+  { id: 'marco', name: 'Dr. Marco Araya', specialty: 'Ortodoncia' },
 ];
 export const services = [
   { id: 'evaluation', name: 'Valoración', duration: 30, price: 15000 },
   { id: 'cleaning', name: 'Limpieza dental', duration: 60, price: 30000 },
+  { id: 'extraction', name: 'Extracción simple', duration: 45, price: 45000 },
+  { id: 'ortho_control', name: 'Control de ortodoncia', duration: 30, price: 25000 },
 ];
 const clinicDayFormat = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Costa_Rica',

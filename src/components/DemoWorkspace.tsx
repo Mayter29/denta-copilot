@@ -15,10 +15,14 @@ import {
   Zap,
 } from 'lucide-react';
 import type { Workspace } from '@/lib/domain/types';
+import type { DailyInsights } from '@/lib/domain/insights';
 import { applyChatDelta } from '@/lib/domain/chat-delta';
 import { LOCAL_CATALOG, type AgendaCatalog } from '@/lib/domain/catalog';
 import { AgendaPanel } from './AgendaPanel';
-import { ProposalCard } from './ProposalCard';
+import { ProposalList } from './ProposalList';
+import { BriefingCards } from './briefing/BriefingCards';
+import { TimeChips } from './chat/TimeChips';
+import { ResultLine } from './chat/ResultLine';
 import { DentaryBrand } from './brand/DentaryBrand';
 import { DentaMascot } from './brand/DentaMascot';
 import { DentaAvatar } from './brand/DentaAvatar';
@@ -34,6 +38,7 @@ type View = Workspace & {
   catalog?: AgendaCatalog | null;
   conversationId?: string | null;
   connected?: boolean;
+  insights?: DailyInsights | null;
 };
 const suggestions = [
   {
@@ -128,11 +133,11 @@ export function DemoWorkspace() {
           ? 'transcribe'
           : 'reposo';
   const [pendingUser, setPendingUser] = useState<{ id: string; content: string } | null>(null);
-  async function send() {
-    if (!draft.trim() || busy || audioActiveRef.current || !state) return;
+  const [replyBusy, setReplyBusy] = useState<string | null>(null);
+  async function sendText(text: string) {
+    if (!text.trim() || busy || audioActiveRef.current || !state) return;
     setError('');
     chat.clearStatus();
-    const text = draft.trim();
     // Immediate visual answer: the user's own message, marked pending until verified.
     setPendingUser({ id: `pending-${Date.now()}`, content: text });
     const data = await chat.send(text);
@@ -146,6 +151,45 @@ export function DemoWorkspace() {
     setDraft('');
     textarea.current?.focus();
   }
+  async function send() {
+    if (!draft.trim()) return;
+    await sendText(draft.trim());
+  }
+  async function onPatientReply(appointmentId: string, reply: 'confirm' | 'reschedule' | 'cancel') {
+    if (busy || audioActiveRef.current || replyBusy) return;
+    setReplyBusy(appointmentId);
+    setError('');
+    try {
+      const data = await fetchJson('/api/patient-reply', { appointmentId, reply });
+      setState((s) =>
+        s
+          ? {
+              ...s,
+              appointments: (data.appointments as View['appointments']).length
+                ? s.appointments.map((a) =>
+                    (data.appointments as View['appointments']).some((u) => u.id === a.id)
+                      ? (data.appointments as View['appointments']).find((u) => u.id === a.id)!
+                      : a,
+                  )
+                : s.appointments,
+              patientThread: data.patientThread as View['patientThread'],
+              audit: data.audit as View['audit'],
+            }
+          : s,
+      );
+      setTab('patients');
+      setContextOpen(true);
+      const summary = data.summary as string;
+      const patient = state?.appointments.find((a) => a.id === appointmentId)?.patient ?? 'El paciente';
+      await sendText(
+        `${patient} respondió por el canal simulado: ${summary} Resumilo en una línea y decime qué sigue.`,
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setReplyBusy(null);
+    }
+  }
   async function onDecide(id: string, approved: boolean) {
     if (busy || audioActiveRef.current) return;
     setProposalBusy(true);
@@ -157,6 +201,33 @@ export function DemoWorkspace() {
       if (updated?.status === 'confirmed') {
         setDate(updated.change.date);
         setTab(updated.change.action === 'follow_up' ? 'patients' : 'agenda');
+        setContextOpen(true);
+        celebrate();
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setProposalBusy(false);
+    }
+  }
+  async function onDecideBatch(batchId: string, approved: boolean) {
+    if (busy || audioActiveRef.current) return;
+    setProposalBusy(true);
+    setError('');
+    try {
+      const data = await fetchJson('/api/proposals', { batchId, approved });
+      setState((s) => (s ? { ...s, ...data } : s));
+      const batch = data.batch as { confirmed: string[]; failed: { id: string; error: string }[] };
+      if (batch.failed.length)
+        setError(
+          `Lote parcial: ${batch.confirmed.length} aplicada(s), ${batch.failed.length} con problema (${batch.failed[0].error}).`,
+        );
+      else if (batch.confirmed.length) {
+        const first = (data.proposals as { id: string; change: { date: string } }[]).find(
+          (p) => p.id === batch.confirmed[0],
+        );
+        if (first) setDate(first.change.date);
+        setTab('agenda');
         setContextOpen(true);
         celebrate();
       }
@@ -284,6 +355,13 @@ export function DemoWorkspace() {
                 <CheckCheck size={15} />
                 Cada cambio empieza con una propuesta que vos confirmás.
               </div>
+              <BriefingCards
+                insights={state?.insights}
+                doctors={catalog.doctors}
+                services={catalog.services}
+                disabled={busy || !state}
+                onAction={(prompt) => void sendText(prompt)}
+              />
             </div>
           ) : (
             <div className="messages">
@@ -301,23 +379,15 @@ export function DemoWorkspace() {
                       {message.role === 'assistant' ? 'Denta Copilot' : 'Vos'}
                     </span>
                     <div className="message-content">
-                      {message.result ? (
-                        <p>
-                          <strong>
-                            {message.result.kind === 'proposal'
-                              ? 'Pendiente de confirmación'
-                              : message.result.kind === 'needs_input'
-                                ? 'Necesita información'
-                                : message.result.kind === 'paused'
-                                  ? 'Turno pausado'
-                                  : message.result.kind === 'failed'
-                                    ? 'Verificación fallida'
-                                    : 'Respuesta informativa'}
-                          </strong>{' '}
-                          · Sin cambios de agenda en este turno
-                        </p>
-                      ) : null}
+                      {message.result ? <ResultLine kind={message.result.kind} /> : null}
                       <Markdown>{message.content}</Markdown>
+                      {message.role === 'assistant' ? (
+                        <TimeChips
+                          text={message.content}
+                          disabled={busy || audioActive}
+                          onPick={(time) => choose(`¿Me preparás la propuesta para el espacio de las ${time}?`)}
+                        />
+                      ) : null}
                       {message.result?.sources.map((source) => (
                         <details key={source.id}>
                           <summary>Fuente recuperada: {source.title}</summary>
@@ -340,16 +410,14 @@ export function DemoWorkspace() {
                   </div>
                 </article>
               ) : null}
-              {state?.proposals.map((p) => (
-                <ProposalCard
-                  key={p.id}
-                  proposal={p}
-                  busy={busy || audioActive}
-                  onDecide={onDecide}
-                  doctors={catalog.doctors}
-                  services={catalog.services}
-                />
-              ))}
+              <ProposalList
+                proposals={state?.proposals ?? []}
+                busy={busy || audioActive}
+                onDecide={onDecide}
+                onDecideBatch={onDecideBatch}
+                doctors={catalog.doctors}
+                services={catalog.services}
+              />
             </div>
           )}
           <ChatProgress busy={busy} progress={chat.progress} onCancel={chat.cancel} />
@@ -383,7 +451,16 @@ export function DemoWorkspace() {
         </div>
       </main>
       {contextOpen && state ? (
-        <AgendaPanel state={state} date={date} onDate={setDate} tab={tab} onTab={setTab} catalog={catalog} />
+        <AgendaPanel
+          state={state}
+          date={date}
+          onDate={setDate}
+          tab={tab}
+          onTab={setTab}
+          catalog={catalog}
+          onPatientReply={(appointmentId, reply) => void onPatientReply(appointmentId, reply)}
+          replyBusy={replyBusy}
+        />
       ) : null}
     </div>
   );

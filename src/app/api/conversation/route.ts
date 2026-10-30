@@ -3,7 +3,8 @@ import { apiError, guardLocal, RequestError } from '@/lib/server/workspace';
 import { authSession } from '@/lib/server/auth';
 import { routeCookieStore } from '@/lib/server/cookies';
 import { loadSessionContext, readerFor, validSelection } from '@/lib/server/session-context';
-import { readBranchCatalog, readConversationView } from '@/lib/server/connected-view';
+import { readBranchCatalog, readBranchInsights, readConversationView } from '@/lib/server/connected-view';
+import { clinicToday } from '@/lib/domain/types';
 import { readBranchTimeZone } from '@/lib/server/connected-chat';
 export const runtime = 'nodejs';
 
@@ -32,7 +33,13 @@ export async function GET(request: Request) {
     const timeZone = await readBranchTimeZone(reader, selection.branchId);
     const catalog = await readBranchCatalog(reader, { tenantId: selection.tenantId });
     if (!parsed.data.conversationId) {
-      return Response.json({ messages: [], proposals: [], audit: [], ...catalog, conversationId: null });
+      const insights = await readBranchInsights(reader, {
+        tenantId: selection.tenantId,
+        branchId: selection.branchId,
+        timeZone,
+        today: clinicToday(),
+      });
+      return Response.json({ messages: [], proposals: [], audit: [], ...catalog, insights, conversationId: null });
     }
     const view = await readConversationView(reader, {
       tenantId: selection.tenantId,
@@ -40,7 +47,13 @@ export async function GET(request: Request) {
       conversationId: parsed.data.conversationId,
       timeZone,
     });
-    return Response.json({ ...view, ...catalog, conversationId: parsed.data.conversationId });
+    const insights = await readBranchInsights(reader, {
+      tenantId: selection.tenantId,
+      branchId: selection.branchId,
+      timeZone,
+      today: clinicToday(),
+    });
+    return Response.json({ ...view, ...catalog, insights, conversationId: parsed.data.conversationId });
   } catch (error) {
     return apiError(error);
   }

@@ -1,7 +1,14 @@
 import { CalendarDays, Clock3, ArrowUpRight, BookOpen, History } from 'lucide-react';
-import type { Workspace } from '@/lib/domain/types';
+import type { Attendance, Workspace } from '@/lib/domain/types';
 import { LOCAL_CATALOG, type AgendaCatalog } from '@/lib/domain/catalog';
 import { PatientThread } from './patient/PatientThread';
+
+const attendanceLabel: Record<Attendance, string> = {
+  confirmed: 'Confirmada',
+  unconfirmed: 'Sin confirmar',
+  no_show: 'Inasistencia',
+};
+
 export function AgendaPanel({
   state,
   date,
@@ -9,6 +16,8 @@ export function AgendaPanel({
   tab,
   onTab,
   catalog = LOCAL_CATALOG,
+  onPatientReply,
+  replyBusy,
 }: {
   state: Workspace;
   date: string;
@@ -16,6 +25,8 @@ export function AgendaPanel({
   tab: string;
   onTab: (v: string) => void;
   catalog?: AgendaCatalog;
+  onPatientReply?: (appointmentId: string, reply: 'confirm' | 'reschedule' | 'cancel') => void;
+  replyBusy?: string | null;
 }) {
   const appointments = state.appointments
     .filter((a) => a.date === date && a.status === 'scheduled')
@@ -81,9 +92,9 @@ export function AgendaPanel({
                     </span>
                     <h3>{a.patient}</h3>
                     <p>{catalog.doctors.find((d) => d.id === a.doctorId)?.name}</p>
-                    <span className="appointment-status">
+                    <span className={`appointment-status attend-${a.attendance ?? 'confirmed'}`}>
                       <span />
-                      Programada
+                      {attendanceLabel[a.attendance ?? 'confirmed']}
                     </span>
                   </div>
                 </article>
@@ -105,7 +116,12 @@ export function AgendaPanel({
           </div>
         </>
       ) : tab === 'patients' && state.patientThread ? (
-        <PatientThread messages={state.patientThread} appointments={state.appointments} />
+        <PatientThread
+          messages={state.patientThread}
+          appointments={state.appointments}
+          onReply={onPatientReply}
+          replyBusy={replyBusy}
+        />
       ) : tab === 'knowledge' ? (
         <>
           <div className="context-heading">

@@ -4,7 +4,11 @@ import Markdown from 'react-markdown';
 import { CheckCheck, Sparkles } from 'lucide-react';
 import type { ChatEntry, Proposal } from '@/lib/domain/types';
 import { applyChatDelta, type ChatDelta } from '@/lib/domain/chat-delta';
-import { ProposalCard } from '../ProposalCard';
+import type { DailyInsights } from '@/lib/domain/insights';
+import { ProposalList } from '../ProposalList';
+import { BriefingCards } from '../briefing/BriefingCards';
+import { TimeChips } from '../chat/TimeChips';
+import { ResultLine } from '../chat/ResultLine';
 import { DentaAvatar, type DentaPresence } from '../brand/DentaAvatar';
 import { DentaMascot } from '../brand/DentaMascot';
 import { ChatComposer } from '../chat/ChatComposer';
@@ -31,7 +35,15 @@ async function fetchJson(url: string, body?: unknown) {
   return (await response.json()) as Record<string, unknown>;
 }
 
-function MessageArticle({ message }: { message: ChatEntry }) {
+function MessageArticle({
+  message,
+  onPickTime,
+  timeDisabled,
+}: {
+  message: ChatEntry;
+  onPickTime?: (time: string) => void;
+  timeDisabled?: boolean;
+}) {
   return (
     <article className={`message ${message.role}`}>
       <div className="message-avatar">
@@ -44,23 +56,11 @@ function MessageArticle({ message }: { message: ChatEntry }) {
       <div>
         <span className="message-author">{message.role === 'assistant' ? 'Denta Copilot' : 'Vos'}</span>
         <div className="message-content">
-          {message.result ? (
-            <p>
-              <strong>
-                {message.result.kind === 'proposal'
-                  ? 'Pendiente de confirmación'
-                  : message.result.kind === 'needs_input'
-                    ? 'Necesita información'
-                    : message.result.kind === 'paused'
-                      ? 'Turno pausado'
-                      : message.result.kind === 'failed'
-                        ? 'Verificación fallida'
-                        : 'Respuesta informativa'}
-              </strong>{' '}
-              · Sin cambios de agenda en este turno
-            </p>
-          ) : null}
+          {message.result ? <ResultLine kind={message.result.kind} /> : null}
           <Markdown>{message.content}</Markdown>
+          {message.role === 'assistant' && onPickTime ? (
+            <TimeChips text={message.content} onPick={onPickTime} disabled={timeDisabled} />
+          ) : null}
           {message.pending ? <p className="muted small">Enviando…</p> : null}
           {message.result?.sources.map((source) => (
             <details key={source.id}>
@@ -83,6 +83,7 @@ export function CopilotArea() {
   const [messages, setMessages] = useState<ChatEntry[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [catalog, setCatalog] = useState<Catalog>({ doctors: [], services: [] });
+  const [insights, setInsights] = useState<DailyInsights | null>(null);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
   const [proposalBusy, setProposalBusy] = useState(false);
@@ -111,6 +112,7 @@ export function CopilotArea() {
       const data = await fetchJson(`/api/conversation${query}`);
       setMessages((data.messages ?? []) as ChatEntry[]);
       setProposals((data.proposals ?? []) as Proposal[]);
+      setInsights((data.insights ?? null) as DailyInsights | null);
       setCatalog({
         doctors: (data.doctors ?? []) as Catalog['doctors'],
         services: (data.services ?? []) as Catalog['services'],
@@ -180,11 +182,10 @@ export function CopilotArea() {
     }
   }, [conversationKey]);
 
-  async function send() {
-    if (!draft.trim() || busy || audioActiveRef.current) return;
+  async function sendText(text: string) {
+    if (!text.trim() || busy || audioActiveRef.current) return;
     setError('');
     chat.clearStatus();
-    const text = draft.trim();
     setPendingUser({ id: `pending-${Date.now()}`, content: text });
     const conversationId = storedConversation();
     const data = await chat.send(text, {
@@ -200,6 +201,11 @@ export function CopilotArea() {
     applyDelta(data);
     setDraft('');
     textarea.current?.focus();
+  }
+
+  async function send() {
+    if (!draft.trim()) return;
+    await sendText(draft.trim());
   }
 
   async function onDecide(id: string, approved: boolean) {
@@ -248,27 +254,39 @@ export function CopilotArea() {
               <CheckCheck size={15} />
               Cada cambio empieza con una propuesta que vos confirmás.
             </div>
+            <BriefingCards
+              insights={insights}
+              doctors={catalog.doctors}
+              services={catalog.services}
+              disabled={busy}
+              onAction={(prompt) => void sendText(prompt)}
+            />
           </div>
         ) : (
           <div className="messages">
             {messages.map((message) => (
-              <MessageArticle key={message.id} message={message} />
+              <MessageArticle
+                key={message.id}
+                message={message}
+                timeDisabled={busy}
+                onPickTime={(time) => {
+                  setDraft(`¿Me preparás la propuesta para el espacio de las ${time}?`);
+                  textarea.current?.focus();
+                }}
+              />
             ))}
             {pendingUser ? (
               <MessageArticle
                 message={{ id: pendingUser.id, role: 'user', content: pendingUser.content, pending: true }}
               />
             ) : null}
-            {proposals.map((proposal) => (
-              <ProposalCard
-                key={proposal.id}
-                proposal={proposal}
-                busy={busy}
-                onDecide={onDecide}
-                doctors={catalog.doctors}
-                services={catalog.services}
-              />
-            ))}
+            <ProposalList
+              proposals={proposals}
+              busy={busy}
+              onDecide={onDecide}
+              doctors={catalog.doctors}
+              services={catalog.services}
+            />
           </div>
         )}
         <ChatProgress busy={busy} progress={chat.progress} onCancel={chat.cancel} />

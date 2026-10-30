@@ -4,6 +4,8 @@ import { ArrowUp, Command, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { appendTranscript } from '@/lib/client/transcription';
 import { useDictation, type DictationPhase } from './useDictation';
 import { DictationControls, DictationFeedback } from './DictationControls';
+import { useLiveDictation } from './useLiveDictation';
+import { LiveDictationControls, LiveDictationFeedback } from './LiveDictationControls';
 
 const labels: Record<DictationPhase, string> = {
   idle: 'Dictado a borrador · hasta 60 s',
@@ -51,10 +53,29 @@ export function ChatComposer({
     },
     [draft, onDraftChange, textareaRef],
   );
-  const dictation = useDictation({ onTranscript, onActivityChange, onPresence });
-  const active = dictation.phase !== 'idle';
-  const recording = dictation.phase === 'recording';
-  const pending = ['requesting', 'stopping', 'transcribing'].includes(dictation.phase);
+  const fileActiveRef = useRef(false);
+  const liveActiveRef = useRef(false);
+  const dictation = useDictation({
+    onTranscript,
+    onActivityChange: (active) => {
+      fileActiveRef.current = active;
+      onActivityChange(active || liveActiveRef.current);
+    },
+    onPresence,
+  });
+  const live = useLiveDictation({
+    onCommit: onTranscript,
+    onActivityChange: (active) => {
+      liveActiveRef.current = active;
+      onActivityChange(fileActiveRef.current || active);
+    },
+    onPresence,
+  });
+  const liveActive = live.phase === 'connecting' || live.phase === 'streaming';
+  const active = dictation.phase !== 'idle' || liveActive;
+  const recording = dictation.phase === 'recording' || live.phase === 'streaming';
+  const pending =
+    ['requesting', 'stopping', 'transcribing'].includes(dictation.phase) || live.phase === 'connecting';
   const hadWork = useRef(false);
   useEffect(() => {
     if (busy || active) hadWork.current = true;
@@ -63,9 +84,11 @@ export function ChatComposer({
       textareaRef.current?.focus();
     }
   }, [busy, active, textareaRef]);
+
   return (
     <>
       <DictationFeedback dictation={dictation} onUseTranscript={onDraftChange} />
+      <LiveDictationFeedback live={live} onUseTranscript={onDraftChange} />
       <form
         className={`composer${busy || pending ? ' composer-busy' : ''}${recording ? ' composer-recording' : ''}`}
         onSubmit={(event) => {
@@ -93,7 +116,8 @@ export function ChatComposer({
           }}
         />
         <div className="composer-actions">
-          <DictationControls dictation={dictation} disabled={disabled} />
+          <DictationControls dictation={dictation} disabled={disabled || liveActive} />
+          <LiveDictationControls live={live} disabled={disabled || dictation.phase !== 'idle'} />
           <button
             className="send-button"
             type="submit"
@@ -106,12 +130,20 @@ export function ChatComposer({
       </form>
       <div className="dictation-status">
         <span role="status" aria-live="polite">
-          {labels[dictation.phase]}
+          {liveActive ? 'Transcribiendo en vivo con Meta' : labels[dictation.phase]}
         </span>
         {recording ? (
           <>
-            <span aria-hidden="true"> · {String(dictation.seconds).padStart(2, '0')} / 60 s</span>
-            <meter aria-label="Nivel del micrófono" min={0} max={1} value={dictation.level} />
+            <span aria-hidden="true">
+              {' '}
+              · {String(live.phase === 'streaming' ? live.seconds : dictation.seconds).padStart(2, '0')} / 60 s
+            </span>
+            <meter
+              aria-label="Nivel del micrófono"
+              min={0}
+              max={1}
+              value={live.phase === 'streaming' ? live.level : dictation.level}
+            />
           </>
         ) : null}
       </div>

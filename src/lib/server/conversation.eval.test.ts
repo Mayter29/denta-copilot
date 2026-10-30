@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { decide, propose, seedWorkspace } from '../domain/agenda';
+import { decide, decideBatch, propose, seedWorkspace } from '../domain/agenda';
 import { executionReceipt, type ResultDraft } from '../domain/results';
 import type { Proposal } from '../domain/types';
 import * as knowledge from '../domain/knowledge';
@@ -289,6 +289,54 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
     expect(state.proposals).toEqual([]);
     expect(state.patientThread).toEqual(before);
     expect(state.audit).toEqual([]);
+  });
+
+  it('la Dra. Valeria no viene el viernes → lote con una propuesta por cita', async () => {
+    const state = seedWorkspace('2026-10-27', { showcase: true });
+    const friday = state.appointments.find((a) => a.id === 'demo-show-elena')!.date;
+    const model = scriptedModel([
+      {
+        toolName: 'proposeBatchReschedule',
+        input: {
+          professionalId: 'valeria',
+          date: friday,
+          motivo: 'La doctora no viene el viernes.',
+        },
+      },
+      (prompt) => {
+        const batch = toolOutput<{ proposals: Proposal[]; unresolved: unknown[] }>(
+          prompt,
+          'proposeBatchReschedule',
+        );
+        expect(batch.proposals).toHaveLength(5);
+        expect(batch.unresolved).toEqual([]);
+        const moments = new Set(
+          batch.proposals.map((p) => `${p.change.date}T${p.change.time}`),
+        );
+        expect(moments.size).toBe(5);
+        return final(
+          'proposal',
+          'Lote listo',
+          [],
+          batch.proposals.map((p) => p.id),
+        );
+      },
+    ]);
+    const result = await runSecretary(
+      state,
+      'La Dra. Valeria no viene el viernes. Reorganizá sus citas.',
+      { model, now },
+    );
+    expect(result.kind).toBe('proposal');
+    expect(result.proposals).toHaveLength(5);
+    expect(result.execution).toBe('none');
+    expect(state.audit).toEqual([]);
+    const batchId = result.proposals[0].change.batchId!;
+    expect(new Set(result.proposals.map((p) => p.change.batchId)).size).toBe(1);
+    expect(decideBatch(state, batchId, true, now).confirmed).toHaveLength(5);
+    expect(decideBatch(state, batchId, true, now).confirmed).toEqual([]);
+    expect(state.audit).toHaveLength(5);
+    expect(state.appointments.filter((a) => a.date === friday && a.doctorId === 'valeria')).toHaveLength(0);
   });
 
   it('ID de otra sesión no genera una propuesta válida', async () => {

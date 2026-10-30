@@ -25,9 +25,10 @@ export function previousOpenDay(date: string) {
 
 export function seedWorkspace(
   date = clinicToday(),
+  options: { showcase?: boolean } = {},
 ): Workspace & { patientThread: PatientMessage[] } {
   const missed = previousOpenDay(date);
-  return {
+  const base: Workspace & { patientThread: PatientMessage[] } = {
     appointments: [
       {
         id: 'demo-ana',
@@ -88,6 +89,62 @@ export function seedWorkspace(
       },
     ],
   };
+  if (options.showcase) {
+    base.appointments.push(...showcaseAppointments(date));
+    base.patientThread.push(...showcaseThread(date));
+  }
+  return base;
+}
+
+function addDays(date: string, days: number) {
+  const cursor = new Date(`${date}T12:00:00-06:00`);
+  cursor.setUTCDate(cursor.getUTCDate() + days);
+  return clinicToday(cursor);
+}
+
+function nextWeekday(date: string, weekday: number) {
+  let cursor = addDays(date, 1);
+  while (new Date(`${cursor}T12:00:00-06:00`).getUTCDay() !== weekday) cursor = addDays(cursor, 1);
+  return cursor;
+}
+
+/** Two weeks of fictitious appointments with demo patterns. Never real data. */
+function showcaseAppointments(
+  date: string,
+): (Workspace['appointments'][number] & { attendance: Attendance })[] {
+  const sunday = (day: string) => new Date(`${day}T12:00:00-06:00`).getUTCDay() === 0;
+  const morning = sunday(addDays(date, 1)) ? addDays(date, 2) : addDays(date, 1);
+  const friday = nextWeekday(date, 5);
+  const monday = nextWeekday(date, 1);
+  const dayAfter = sunday(addDays(date, 2)) ? addDays(date, 3) : addDays(date, 2);
+  const list: (Workspace['appointments'][number] & { attendance: Attendance })[] = [
+    { id: 'demo-show-paula', patient: 'Paula Jiménez (demo)', doctorId: 'valeria', serviceId: 'evaluation', date: morning, time: '08:30', duration: 30, status: 'scheduled', version: 1, attendance: 'unconfirmed' },
+    { id: 'demo-show-diego', patient: 'Diego Castro (demo)', doctorId: 'andres', serviceId: 'cleaning', date: morning, time: '09:00', duration: 60, status: 'scheduled', version: 1, attendance: 'unconfirmed' },
+    { id: 'demo-show-lucia', patient: 'Lucía Fernández (demo)', doctorId: 'camila', serviceId: 'evaluation', date: morning, time: '10:00', duration: 30, status: 'scheduled', version: 1, attendance: 'confirmed' },
+    { id: 'demo-show-elena', patient: 'Elena Vargas (demo)', doctorId: 'valeria', serviceId: 'evaluation', date: friday, time: '08:00', duration: 30, status: 'scheduled', version: 1, attendance: 'confirmed' },
+    { id: 'demo-show-mario', patient: 'Mario Quirós (demo)', doctorId: 'valeria', serviceId: 'cleaning', date: friday, time: '09:00', duration: 60, status: 'scheduled', version: 1, attendance: 'confirmed' },
+    { id: 'demo-show-mendez', patient: 'Sofía Méndez (demo)', doctorId: 'valeria', serviceId: 'evaluation', date: friday, time: '10:30', duration: 30, status: 'scheduled', version: 1, attendance: 'unconfirmed' },
+    { id: 'demo-show-rosa', patient: 'Rosa Aguilar (demo)', doctorId: 'valeria', serviceId: 'extraction', date: friday, time: '13:00', duration: 45, status: 'scheduled', version: 1, attendance: 'confirmed' },
+    { id: 'demo-show-pablo', patient: 'Pablo Núñez (demo)', doctorId: 'valeria', serviceId: 'ortho_control', date: friday, time: '15:00', duration: 30, status: 'scheduled', version: 1, attendance: 'unconfirmed' },
+    { id: 'demo-show-maria', patient: 'María Gómez (demo)', doctorId: 'valeria', serviceId: 'evaluation', date: addDays(date, -6), time: '10:00', duration: 30, status: 'scheduled', version: 1, attendance: 'no_show' },
+    { id: 'demo-show-jose', patient: 'José Pérez (demo)', doctorId: 'andres', serviceId: 'evaluation', date: addDays(date, -3), time: '11:00', duration: 30, status: 'scheduled', version: 1, attendance: 'no_show' },
+    { id: 'demo-show-carmen', patient: 'Carmen Ruiz (demo)', doctorId: 'marco', serviceId: 'ortho_control', date: monday, time: '09:00', duration: 30, status: 'scheduled', version: 1, attendance: 'confirmed' },
+    { id: 'demo-show-jorge', patient: 'Jorge Miranda (demo)', doctorId: 'andres', serviceId: 'cleaning', date: dayAfter, time: '14:00', duration: 60, status: 'scheduled', version: 1, attendance: 'confirmed' },
+  ];
+  return list;
+}
+
+function showcaseThread(date: string): PatientMessage[] {
+  return [
+    {
+      id: 'demo-show-msg-maria',
+      appointmentId: 'demo-show-maria',
+      patient: 'María Gómez (demo)',
+      direction: 'inbound',
+      body: 'Hola, no pude llegar a mi cita. ¿Me ayudan a buscar otro espacio?',
+      at: `${addDays(date, -6)}T12:10:00-06:00`,
+    },
+  ];
 }
 
 export function hydrateWorkspace(state: Workspace): Workspace {
@@ -309,4 +366,186 @@ export function availableSlots(
       return false;
     }
   });
+}
+
+export type BatchInput = { doctorId: string; date: string; motivo: string };
+export type BatchResult = {
+  batchId: string;
+  motivo: string;
+  date: string;
+  doctorId: string;
+  affected: { appointmentId: string; patient: string; time: string; serviceId: string }[];
+  proposals: Proposal[];
+  unresolved: { appointmentId: string; patient: string; reason: string }[];
+};
+
+/**
+ * Builds one reschedule proposal per affected visit, each with its own free slot.
+ * Proposals only; every row still needs a human click, individually or as a batch.
+ */
+export function proposeBatchReschedule(
+  state: Workspace,
+  input: BatchInput,
+  now = new Date(),
+): BatchResult {
+  const motivo = input.motivo.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new DomainError('Fecha inválida.');
+  if (motivo.length < 4 || motivo.length > 140)
+    throw new DomainError('Contanos el motivo en 4 a 140 caracteres.');
+  if (!doctors.some((d) => d.id === input.doctorId))
+    throw new DomainError('Profesional no disponible.');
+  const affected = state.appointments
+    .filter((a) => a.status === 'scheduled' && a.doctorId === input.doctorId && a.date === input.date)
+    .sort((a, b) => a.time.localeCompare(b.time));
+  if (!affected.length)
+    throw new DomainError('No hay citas programadas ese día para ese profesional.');
+  const batchId = randomUUID();
+  const taken: { date: string; start: number; end: number }[] = [];
+  const created: Proposal[] = [];
+  const unresolved: BatchResult['unresolved'] = [];
+  const serviceOf = (serviceId: string) => services.find((s) => s.id === serviceId);
+  for (const appointment of affected) {
+    let placed: Proposal | undefined;
+    let reason = 'Sin espacio en los próximos 14 días.';
+    const duration = serviceOf(appointment.serviceId)?.duration ?? appointment.duration;
+    for (let offset = 1; offset <= 14 && !placed; offset++) {
+      const day = addDays(input.date, offset);
+      if (new Date(`${day}T12:00:00-06:00`).getUTCDay() === 0) continue;
+      const free = availableSlots(state, day, appointment.doctorId, appointment.serviceId, now).filter(
+        (time) => {
+          const start = minutes(time);
+          const end = start + duration;
+          return !taken.some((slot) => slot.date === day && start < slot.end && end > slot.start);
+        },
+      );
+      if (!free.length) continue;
+      try {
+        placed = propose(
+          state,
+          {
+            action: 'reschedule',
+            patient: appointment.patient,
+            appointmentId: appointment.id,
+            doctorId: appointment.doctorId,
+            serviceId: appointment.serviceId,
+            date: day,
+            time: free[0],
+            batchId,
+            motivo,
+          },
+          now,
+        );
+        taken.push({ date: day, start: minutes(free[0]), end: minutes(free[0]) + duration });
+      } catch (error) {
+        reason = error instanceof DomainError ? error.message : 'No se pudo preparar la propuesta.';
+      }
+    }
+    if (placed) created.push(placed);
+    else unresolved.push({ appointmentId: appointment.id, patient: appointment.patient, reason });
+  }
+  if (!created.length) throw new DomainError(unresolved[0]?.reason ?? 'No se pudo preparar la propuesta.');
+  return {
+    batchId,
+    motivo,
+    date: input.date,
+    doctorId: input.doctorId,
+    affected: affected.map((a) => ({
+      appointmentId: a.id,
+      patient: a.patient,
+      time: a.time,
+      serviceId: a.serviceId,
+    })),
+    proposals: created,
+    unresolved,
+  };
+}
+
+export type BatchDecision = {
+  batchId: string;
+  confirmed: string[];
+  failed: { id: string; error: string }[];
+};
+
+/** Decides every pending proposal of a batch, row by row. Partial results are reported. */
+export function decideBatch(
+  state: Workspace,
+  batchId: string,
+  approved: boolean,
+  now = new Date(),
+): BatchDecision {
+  const grouped = state.proposals.filter((p) => p.change.batchId === batchId);
+  if (!grouped.length) throw new DomainError('No encontramos propuestas de ese grupo.');
+  const pending = grouped.filter((p) => p.status === 'pending');
+  const result: BatchDecision = { batchId, confirmed: [], failed: [] };
+  if (!pending.length) return result;
+  if (!approved) {
+    for (const proposal of pending) proposal.status = 'rejected';
+    return result;
+  }
+  for (const proposal of pending) {
+    try {
+      decide(state, proposal.id, approved, now);
+      if (proposal.status === 'confirmed') result.confirmed.push(proposal.id);
+      else result.failed.push({ id: proposal.id, error: 'La propuesta no quedó confirmada.' });
+    } catch (error) {
+      result.failed.push({
+        id: proposal.id,
+        error: error instanceof DomainError ? error.message : 'No se pudo confirmar.',
+      });
+    }
+  }
+  return result;
+}
+
+export type PatientReply = 'confirm' | 'reschedule' | 'cancel';
+
+/**
+ * Simulated patient answer in the demo channel. Confirming records attendance;
+ * asking to reschedule or cancel only leaves a message — the agenda still
+ * changes exclusively through a human-confirmed proposal card.
+ */
+export function patientReply(
+  state: Workspace,
+  appointmentId: string,
+  reply: PatientReply,
+  now = new Date(),
+): PatientMessage {
+  const appointment = state.appointments.find((a) => a.id === appointmentId);
+  if (!appointment || appointment.status !== 'scheduled')
+    throw new DomainError('La cita ya no está disponible.');
+  const bodies: Record<PatientReply, string> = {
+    confirm: `Hola, confirmo mi cita del ${appointment.date} a las ${appointment.time}. ¡Gracias!`,
+    reschedule: `Hola, no puedo llegar a mi cita del ${appointment.date} a las ${appointment.time}. ¿Me ayudan a reprogramarla, por favor?`,
+    cancel: `Hola, necesito cancelar mi cita del ${appointment.date} a las ${appointment.time}. ¡Gracias!`,
+  };
+  const message: PatientMessage = {
+    id: randomUUID(),
+    appointmentId: appointment.id,
+    patient: appointment.patient,
+    direction: 'inbound',
+    body: bodies[reply],
+    at: now.toISOString(),
+  };
+  state.patientThread ??= [];
+  state.patientThread.push(message);
+  if (reply === 'confirm') {
+    appointment.attendance = 'confirmed';
+    appointment.version++;
+    state.audit.push({
+      id: message.id,
+      action: 'patient_confirm',
+      appointmentId: appointment.id,
+      at: message.at,
+    });
+  }
+  return message;
+}
+
+/** Server-owned summary of a simulated reply, in voseo. Display only; never a write receipt. */
+export function patientReplySummary(reply: PatientReply, patient: string): string {
+  const name = patient.replace(' (demo)', '');
+  if (reply === 'confirm') return `${name} confirmó su cita por el canal simulado. La agenda ya muestra la asistencia confirmada.`;
+  if (reply === 'reschedule')
+    return `${name} pidió reprogramar por el canal simulado. La agenda sigue igual: prepará la propuesta de reagendamiento y confirmala con un clic.`;
+  return `${name} pidió cancelar por el canal simulado. La agenda sigue igual: prepará la propuesta de cancelación y confirmala con un clic.`;
 }

@@ -29,9 +29,13 @@ Abrir [la demo local](http://127.0.0.1:3420). El proceso escucha únicamente en 
 - Horarios, duración, choques, vencimiento, control de versión, confirmación idempotente y auditoría.
 - Agenda visible y fuentes ficticias de conocimiento con recuperación léxica.
 - Micrófono con permiso explícito: grabar, detener y transcribir con Muse Voice Transcribe a un borrador editable. Cancelación, reintento y límite de 60 s; no se envía automáticamente al chat. Ver [flujo y límites del dictado](docs/DICTADO.md).
+- Voz en vivo con Meta (ruta `/api/voice-stream`, puente WebSocket en servidor con `ENDPOINTING`, parciales CUMULATIVE, `languageBias: Spanish` y vocabulario dental): la clave nunca llega al navegador; los turnos confirmados caen al borrador y el envío sigue siendo manual. Requiere micrófono a 16 kHz; si el dispositivo entrega otra frecuencia, se usa el dictado por archivo.
+- Briefing proactivo «Buenos días»: `getDailyInsights` (sin confirmar de mañana, inasistencias recientes, huecos libres, pacientes sin cita futura) con 4 tarjetas de un clic que generan la propuesta correspondiente.
+- Reprogramación en lote `proposeBatchReschedule`: agrupa una propuesta por cita afectada, confirma todo junto o por fila, reporta parciales; doble confirmación idempotente.
+- Canal simulado del paciente: `proposeFollowUp` reintegrado; el panel permite simular Confirmar/Reagendar/Cancelar, la agenda se actualiza en vivo (solo la confirmación cambia asistencia) y Denta resume con el modelo. Nunca envía WhatsApp.
 - Datos de cada sesión en `work/sessions`, separados con cookie firmada HttpOnly. Persisten recargas y reinicios del proceso local.
 
-El chat muestra progreso real por SSE (consultando agenda, disponibilidad, información, preparando propuesta) derivado de herramientas ejecutadas; todavía no transmite tokens progresivamente. La conexión al Supabase exclusivo de este proyecto está configurada y verificada; la agenda y el chat aún usan archivos locales. WhatsApp, servidor MCP y voz en vivo siguen pendientes. La persistencia local es para un único proceso y datos ficticios. No es el almacenamiento de producción.
+El chat muestra progreso real por SSE (consultando agenda, disponibilidad, información, preparando propuesta) derivado de herramientas ejecutadas; todavía no transmite tokens progresivamente. La conexión al Supabase exclusivo de este proyecto está configurada y verificada; la agenda y el chat aún usan archivos locales. En modo conectado, el briefing y el lote funcionan sobre lecturas (sin RPC nuevos) y las tarjetas de lote se confirman por separado; el seguimiento de pacientes sigue siendo solo local. WhatsApp y servidor MCP siguen pendientes. La persistencia local es para un único proceso y datos ficticios. No es el almacenamiento de producción.
 
 Supabase está fijado a `lyphdzeazqnaepyzzisi` para impedir conexiones accidentales a otros proyectos. Verificar con `pnpm supabase:check`. Ver [configuración y alcance](docs/SUPABASE.md).
 
@@ -44,6 +48,9 @@ La [migración inicial de base de datos](docs/DATABASE.md) separa el núcleo del
 3. Elegir una hora disponible y pedir reservar para una persona ficticia.
 4. Confirmar la tarjeta y verificar la agenda. Pedir reagendar y luego cancelar.
 5. Tocar el micrófono, dictar una solicitud ficticia, detener, corregir el borrador y enviar.
+6. «Buenos días, Denta. ¿Qué tenemos pendiente hoy?» y usar una tarjeta del resumen.
+7. «La doctora Valeria no viene el viernes. Reorganizá sus citas.» Confirmar todo junto y revisar la actividad.
+8. En Pacientes · simulación, simular que Luis confirma y leer el resumen de Denta.
 
 ```powershell
 pnpm check

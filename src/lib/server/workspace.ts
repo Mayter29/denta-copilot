@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { cookies } from 'next/headers';
 import { DomainError, hydrateWorkspace, seedWorkspace } from '../domain/agenda';
+import { clinicToday } from '../domain/types';
 import type { Workspace } from '../domain/types';
 
 export class RequestError extends Error {
@@ -68,7 +69,7 @@ export async function withWorkspace<T>(
         state = hydrateWorkspace(JSON.parse(await readFile(file, 'utf8')) as Workspace);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-        state = seedWorkspace();
+        state = seedWorkspace(clinicToday(), { showcase: true });
       }
       const result = await fn(state);
       const temporary = `${file}.${randomUUID()}.tmp`;
