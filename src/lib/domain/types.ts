@@ -41,6 +41,8 @@ export type ChatEntry = {
   result?: VerifiedResult;
   runId?: string;
   promptVersion?: string;
+  /** Solo cliente: mensaje optimista aún no confirmado por el servidor. Nunca persiste. */
+  pending?: boolean;
 };
 export type Workspace = {
   appointments: Appointment[];
