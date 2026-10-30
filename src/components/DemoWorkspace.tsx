@@ -25,8 +25,6 @@ import { DentaAvatar } from './brand/DentaAvatar';
 import { ChatComposer } from './chat/ChatComposer';
 import { ChatProgress } from './chat/ChatProgress';
 import { useChatRequest } from './chat/useChatRequest';
-import { AuthPanel } from './AuthPanel';
-import { useAuthSession } from './useAuthSession';
 import type { DentaPresence } from './brand/DentaAvatar';
 import type { DictationPhase } from './chat/useDictation';
 
@@ -69,7 +67,7 @@ async function fetchJson(url: string, body?: unknown) {
   if (!response.ok) throw new Error(data.error || 'No se pudo completar la solicitud.');
   return data;
 }
-export function CopilotWorkspace() {
+export function DemoWorkspace() {
   const [state, setState] = useState<View | null>(null);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
@@ -83,38 +81,18 @@ export function CopilotWorkspace() {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [audioActive, setAudioActive] = useState(false);
   const audioActiveRef = useRef(false);
-  const { auth, selection, handleAuthChange } = useAuthSession();
   const [dictation, setDictation] = useState<{ phase: DictationPhase; level: number }>({
     phase: 'idle',
     level: 0,
   });
   const [successTick, setSuccessTick] = useState(false);
-  const connected = !!(
-    auth?.authenticated &&
-    auth.serviceWrites &&
-    selection &&
-    auth.contexts.some((c) => c.tenantId === selection.tenantId && c.branchId === selection.branchId)
-  );
-  const conversationKey = selection ? `denta-conversation-${selection.tenantId}/${selection.branchId}` : null;
   const onAudioActivity = useCallback((active: boolean) => {
     audioActiveRef.current = active;
     setAudioActive(active);
   }, []);
   const load = useCallback(async () => {
     try {
-      let query = '';
-      if (auth?.authenticated && auth.serviceWrites && selection) {
-        let conversationId = '';
-        try {
-          conversationId = window.localStorage.getItem(conversationKey ?? '') ?? '';
-        } catch {
-          conversationId = '';
-        }
-        query =
-          `?tenantId=${selection.tenantId}&branchId=${selection.branchId}` +
-          (conversationId ? `&conversationId=${conversationId}` : '');
-      }
-      const data = (await fetchJson(`/api/workspace${query}`)) as View;
+      const data = (await fetchJson('/api/workspace')) as View;
       setState(data);
       setContextOpen(window.matchMedia('(min-width: 931px)').matches);
       setDate((d) => d || data.today);
@@ -122,7 +100,7 @@ export function CopilotWorkspace() {
     } catch (e) {
       setError((e as Error).message);
     }
-  }, [auth, selection, conversationKey]);
+  }, []);
   // Initial synchronization with the local server; updates occur after fetch completes.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -157,33 +135,12 @@ export function CopilotWorkspace() {
     const text = draft.trim();
     // Immediate visual answer: the user's own message, marked pending until verified.
     setPendingUser({ id: `pending-${Date.now()}`, content: text });
-    const context =
-      connected && selection
-        ? {
-            tenantId: selection.tenantId,
-            branchId: selection.branchId,
-            conversationId: (() => {
-              try {
-                return window.localStorage.getItem(conversationKey ?? '') ?? undefined;
-              } catch {
-                return undefined;
-              }
-            })(),
-          }
-        : undefined;
-    const data = await chat.send(text, context);
+    const data = await chat.send(text);
     // Stale or cancelled responses return null and must not touch the UI.
     setPendingUser(null);
     if (!data) {
       textarea.current?.focus();
       return;
-    }
-    if (data.conversationId && conversationKey) {
-      try {
-        window.localStorage.setItem(conversationKey, data.conversationId);
-      } catch {
-        // Conversation persistence is best-effort; the next turn opens a new one.
-      }
     }
     setState((s) => (s ? { ...s, ...applyChatDelta(s, data) } : s));
     setDraft('');
@@ -194,17 +151,7 @@ export function CopilotWorkspace() {
     setProposalBusy(true);
     setError('');
     try {
-      const data = await fetchJson(
-        '/api/proposals',
-        connected && selection ? { id, approved, tenantId: selection.tenantId, branchId: selection.branchId } : { id, approved },
-      );
-      if (data.conversationId && conversationKey) {
-        try {
-          window.localStorage.setItem(conversationKey, data.conversationId);
-        } catch {
-          // Best-effort only.
-        }
-      }
+      const data = await fetchJson('/api/proposals', { id, approved });
       setState((s) => (s ? { ...s, ...data } : s));
       const updated = data.proposals.find((p: { id: string }) => p.id === id);
       if (updated?.status === 'confirmed') {
@@ -271,20 +218,11 @@ export function CopilotWorkspace() {
               Meta Hackathon 2026 <ArrowUpRight size={13} />
             </span>
           </div>
-          <AuthPanel auth={auth} selection={selection} onAuthChange={handleAuthChange} />
           <div className="user-profile">
             <div className="user-avatar">M</div>
             <div>
               <strong>Mi espacio de prueba</strong>
-              <span>
-                {auth?.authenticated
-                  ? (selection
-                      ? `${auth.contexts.find((c) => c.tenantId === selection.tenantId && c.branchId === selection.branchId)?.tenantName ?? 'Organización'} · ${
-                          auth.contexts.find((c) => c.tenantId === selection.tenantId && c.branchId === selection.branchId)?.branchName ?? 'Sede'
-                        }`
-                      : 'Sin sede asignada')
-                  : 'Sesión local · datos ficticios'}
-              </span>
+              <span>Demostración local · datos ficticios</span>
             </div>
           </div>
         </div>

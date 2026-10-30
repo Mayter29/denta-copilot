@@ -396,6 +396,18 @@ export async function readDayAgenda(
   };
 }
 
+/** Branch catalog names for cards and panels. */
+export async function readBranchCatalog(client: ReaderClient, input: { tenantId: string }) {
+  const [professionals, services] = await Promise.all([
+    run(scope(client, 'dc_demo_professionals', 'id,name,active', input.tenantId), (d) => z.array(professionalRow).parse(d)),
+    run(scope(client, 'dc_demo_services', 'id,name,duration_minutes,price_minor,active', input.tenantId), (d) => z.array(serviceRow).parse(d)),
+  ]);
+  return {
+    doctors: professionals.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name, specialty: 'Odontología general' })),
+    services: services.filter((s) => s.active).map((s) => ({ id: s.id, name: s.name, duration: s.duration_minutes, price: s.price_minor })),
+  };
+}
+
 /** Branch knowledge for the knowledge page only. */
 export async function readBranchKnowledge(
   client: ReaderClient,
