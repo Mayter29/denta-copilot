@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LogIn } from 'lucide-react';
 import { login } from '@/lib/client/auth';
@@ -57,7 +58,7 @@ export default function LoginPage() {
           {pending ? 'Verificando…' : 'Ingresar'}
         </button>
         <p className="muted small">
-          ¿Solo querés explorar? <a href="/demo">Abrí la demostración local</a> sin ingresar.
+          ¿Solo querés explorar? <Link href="/demo">Abrí la demostración local</Link> sin ingresar.
         </p>
       </form>
     </main>

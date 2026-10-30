@@ -58,11 +58,12 @@ export const services = [
   { id: 'evaluation', name: 'Valoración', duration: 30, price: 15000 },
   { id: 'cleaning', name: 'Limpieza dental', duration: 60, price: 30000 },
 ];
+const clinicDayFormat = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Costa_Rica',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
 export function clinicToday(now = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Costa_Rica',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
+  return clinicDayFormat.format(now);
 }

@@ -1,32 +1,22 @@
-'use client';
-import { useEffect, useState } from 'react';
+import { redirect } from 'next/navigation';
+import { authSession } from '@/lib/server/auth';
+import { CONTEXT_COOKIE, decodeSelection, renderCookieStore } from '@/lib/server/cookies';
+import { loadSessionContext, readerFor, validSelection } from '@/lib/server/session-context';
+import { readBranchKnowledge } from '@/lib/server/connected-view';
 import { BookOpen } from 'lucide-react';
-import { useAppContext } from '@/components/app/AppShell';
+import { cookies } from 'next/headers';
 
-type Source = { id: string; title: string; content: string };
-
-export default function KnowledgePage() {
-  const { selection } = useAppContext();
-  const [sources, setSources] = useState<Source[]>([]);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    if (!selection) return;
-    let active = true;
-    void fetch(`/api/knowledge?tenantId=${selection.tenantId}&branchId=${selection.branchId}`, { cache: 'no-store' })
-      .then(async (response) => {
-        if (!response.ok) throw new Error('No se pudo cargar el conocimiento.');
-        return (await response.json()) as { knowledge: Source[] };
-      })
-      .then((data) => {
-        if (active) setSources(data.knowledge);
-      })
-      .catch((e) => {
-        if (active) setError((e as Error).message);
-      });
-    return () => {
-      active = false;
-    };
-  }, [selection]);
+export default async function KnowledgePage() {
+  const session = await authSession(await renderCookieStore());
+  if (!session) redirect('/login');
+  const context = await loadSessionContext(session);
+  const jar = await cookies();
+  const selection = validSelection(context.contexts, decodeSelection(jar.get(CONTEXT_COOKIE)?.value));
+  if (!selection) redirect('/app/seleccionar-sede');
+  const sources = await readBranchKnowledge(readerFor(session), {
+    tenantId: selection.tenantId,
+    branchId: selection.branchId,
+  });
   return (
     <div className="area-page knowledge-page">
       <div className="context-heading">
@@ -35,7 +25,6 @@ export default function KnowledgePage() {
           <h2>Conocimiento de la sede</h2>
         </div>
       </div>
-      {error ? <div className="error-message" role="alert">{error}</div> : null}
       {sources.length ? (
         sources.map((source) => (
           <article className="source" key={source.id}>

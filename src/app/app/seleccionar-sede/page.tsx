@@ -18,8 +18,8 @@ export default function SelectBranchPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tenantId, branchId }),
         });
-        const data: unknown = await response.json().catch(() => null);
         if (!response.ok) {
+          const data: unknown = await response.json().catch(() => null);
           const message =
             data && typeof data === 'object' && 'error' in data
               ? String((data as { error: unknown }).error)

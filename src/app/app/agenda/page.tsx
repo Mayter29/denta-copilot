@@ -1,67 +1,36 @@
-'use client';
-import { useEffect, useState } from 'react';
-import type { Appointment } from '@/lib/domain/types';
-import type { AgendaCatalog } from '@/lib/domain/catalog';
-import { AgendaPanel } from '@/components/AgendaPanel';
-import { useAppContext } from '@/components/app/AppShell';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { authSession } from '@/lib/server/auth';
+import { CONTEXT_COOKIE, decodeSelection, renderCookieStore } from '@/lib/server/cookies';
+import { loadSessionContext, readerFor, validSelection } from '@/lib/server/session-context';
+import { readDayAgenda } from '@/lib/server/connected-view';
+import { readBranchTimeZone } from '@/lib/server/connected-chat';
+import { clinicToday } from '@/lib/domain/types';
+import { DateAgenda } from '@/components/app/DateAgenda';
 
-type AgendaData = {
-  appointments: Appointment[];
-  doctors: AgendaCatalog['doctors'];
-  services: AgendaCatalog['services'];
-  hoursNote: string;
-  timeZone: string;
-  date: string;
-};
-
-export default function AgendaPage() {
-  const { selection } = useAppContext();
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [data, setData] = useState<AgendaData | null>(null);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    if (!selection) return;
-    let active = true;
-    const query = `?tenantId=${selection.tenantId}&branchId=${selection.branchId}&date=${date}`;
-    void fetch(`/api/agenda${query}`, { cache: 'no-store' })
-      .then(async (response) => {
-        if (!response.ok) throw new Error('No se pudo cargar la agenda.');
-        return (await response.json()) as AgendaData;
-      })
-      .then((next) => {
-        if (active) setData(next);
-      })
-      .catch((e) => {
-        if (active) setError((e as Error).message);
-      });
-    return () => {
-      active = false;
-    };
-  }, [selection, date]);
-  if (!selection) return null;
+export default async function AgendaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const session = await authSession(await renderCookieStore());
+  if (!session) redirect('/login');
+  const context = await loadSessionContext(session);
+  const jar = await cookies();
+  const selection = validSelection(context.contexts, decodeSelection(jar.get(CONTEXT_COOKIE)?.value));
+  if (!selection) redirect('/app/seleccionar-sede');
+  const { date } = await searchParams;
+  const reader = readerFor(session);
+  const timeZone = await readBranchTimeZone(reader, selection.branchId);
+  const agenda = await readDayAgenda(reader, {
+    tenantId: selection.tenantId,
+    branchId: selection.branchId,
+    date: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : clinicToday(),
+    timeZone,
+  });
   return (
-    <div className="area-page">
-      {error ? (
-        <div className="error-message" role="alert">{error}</div>
-      ) : null}
-      {data ? (
-        <AgendaPanel
-          state={{ messages: [], proposals: [], appointments: data.appointments, audit: [] }}
-          date={date}
-          onDate={setDate}
-          tab="agenda"
-          onTab={() => {}}
-          catalog={{
-            doctors: data.doctors,
-            services: data.services,
-            knowledge: [],
-            hoursNote: data.hoursNote,
-            timeZone: data.timeZone,
-          }}
-        />
-      ) : (
-        <p role="status">Cargando agenda…</p>
-      )}
-    </div>
+    <DateAgenda
+      initial={{ ...agenda, date: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : clinicToday(), timeZone }}
+    />
   );
 }

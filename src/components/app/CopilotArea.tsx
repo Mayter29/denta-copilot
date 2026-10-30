@@ -31,6 +31,49 @@ async function fetchJson(url: string, body?: unknown) {
   return (await response.json()) as Record<string, unknown>;
 }
 
+function MessageArticle({ message }: { message: ChatEntry }) {
+  return (
+    <article className={`message ${message.role}`}>
+      <div className="message-avatar">
+        {message.role === 'assistant' ? (
+          <DentaMascot size={29} blink={false} interactive={false} paused />
+        ) : (
+          'M'
+        )}
+      </div>
+      <div>
+        <span className="message-author">{message.role === 'assistant' ? 'Denta Copilot' : 'Vos'}</span>
+        <div className="message-content">
+          {message.result ? (
+            <p>
+              <strong>
+                {message.result.kind === 'proposal'
+                  ? 'Pendiente de confirmación'
+                  : message.result.kind === 'needs_input'
+                    ? 'Necesita información'
+                    : message.result.kind === 'paused'
+                      ? 'Turno pausado'
+                      : message.result.kind === 'failed'
+                        ? 'Verificación fallida'
+                        : 'Respuesta informativa'}
+              </strong>{' '}
+              · Sin cambios de agenda en este turno
+            </p>
+          ) : null}
+          <Markdown>{message.content}</Markdown>
+          {message.pending ? <p className="muted small">Enviando…</p> : null}
+          {message.result?.sources.map((source) => (
+            <details key={source.id}>
+              <summary>Fuente recuperada: {source.title}</summary>
+              <p>{source.content}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export function CopilotArea() {
   const { userId, selection } = useAppContext();
   const tenantId = selection?.tenantId ?? '';
@@ -61,32 +104,32 @@ export function CopilotArea() {
     }
   }, [conversationKey]);
 
-  useEffect(() => {
-    let active = true;
+  const load = useCallback(async () => {
     const conversationId = storedConversation();
     const query = `?tenantId=${tenantId}&branchId=${branchId}${conversationId ? `&conversationId=${conversationId}` : ''}`;
-    void fetchJson(`/api/conversation${query}`)
-      .then((data) => {
-        if (!active) return;
-        setMessages((data.messages ?? []) as ChatEntry[]);
-        setProposals((data.proposals ?? []) as Proposal[]);
-        setCatalog({
-          doctors: (data.doctors ?? []) as Catalog['doctors'],
-          services: (data.services ?? []) as Catalog['services'],
-        });
-        try {
-          setDraft(window.localStorage.getItem(draftKey) ?? '');
-        } catch {
-          setDraft('');
-        }
-      })
-      .catch((e) => {
-        if (active) setError((e as Error).message);
+    try {
+      const data = await fetchJson(`/api/conversation${query}`);
+      setMessages((data.messages ?? []) as ChatEntry[]);
+      setProposals((data.proposals ?? []) as Proposal[]);
+      setCatalog({
+        doctors: (data.doctors ?? []) as Catalog['doctors'],
+        services: (data.services ?? []) as Catalog['services'],
       });
-    return () => {
-      active = false;
-    };
-  }, [tenantId, branchId, conversationKey, draftKey, storedConversation]);
+      try {
+        setDraft(window.localStorage.getItem(draftKey) ?? '');
+      } catch {
+        setDraft('');
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, [tenantId, branchId, draftKey, storedConversation]);
+
+  // Initial synchronization with the authorized conversation endpoint.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
 
   useEffect(() => {
     try {
@@ -210,55 +253,12 @@ export function CopilotArea() {
         ) : (
           <div className="messages">
             {messages.map((message) => (
-              <article key={message.id} className={`message ${message.role}`}>
-                <div className="message-avatar">
-                  {message.role === 'assistant' ? (
-                    <DentaMascot size={29} blink={false} interactive={false} paused />
-                  ) : (
-                    'M'
-                  )}
-                </div>
-                <div>
-                  <span className="message-author">{message.role === 'assistant' ? 'Denta Copilot' : 'Vos'}</span>
-                  <div className="message-content">
-                    {message.result ? (
-                      <p>
-                        <strong>
-                          {message.result.kind === 'proposal'
-                            ? 'Pendiente de confirmación'
-                            : message.result.kind === 'needs_input'
-                              ? 'Necesita información'
-                              : message.result.kind === 'paused'
-                                ? 'Turno pausado'
-                                : message.result.kind === 'failed'
-                                  ? 'Verificación fallida'
-                                  : 'Respuesta informativa'}
-                        </strong>{' '}
-                        · Sin cambios de agenda en este turno
-                      </p>
-                    ) : null}
-                    <Markdown>{message.content}</Markdown>
-                    {message.result?.sources.map((source) => (
-                      <details key={source.id}>
-                        <summary>Fuente recuperada: {source.title}</summary>
-                        <p>{source.content}</p>
-                      </details>
-                    ))}
-                  </div>
-                </div>
-              </article>
+              <MessageArticle key={message.id} message={message} />
             ))}
             {pendingUser ? (
-              <article className="message user" aria-label="Mensaje enviando">
-                <div className="message-avatar">M</div>
-                <div>
-                  <span className="message-author">Vos</span>
-                  <div className="message-content">
-                    <Markdown>{pendingUser.content}</Markdown>
-                    <p className="muted small">Enviando…</p>
-                  </div>
-                </div>
-              </article>
+              <MessageArticle
+                message={{ id: pendingUser.id, role: 'user', content: pendingUser.content, pending: true }}
+              />
             ) : null}
             {proposals.map((proposal) => (
               <ProposalCard

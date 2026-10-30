@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useCallback, useContext, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { CalendarDays, Layers2, LogOut, MessageSquare } from 'lucide-react';
@@ -61,8 +61,12 @@ export function AppShell({
     router.refresh();
   }, [router]);
 
+  const contextValue = useMemo(
+    () => ({ userId, contexts, selection, serviceWrites }),
+    [userId, contexts, selection, serviceWrites],
+  );
   return (
-    <AppContext.Provider value={{ userId, contexts, selection, serviceWrites }}>
+    <AppContext.Provider value={contextValue}>
       <div className="app-shell context-hidden">
         <nav className="sidebar" aria-label="Navegación principal">
           <DentaryBrand placement="sidebar" />
