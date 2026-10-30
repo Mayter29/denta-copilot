@@ -45,7 +45,7 @@ describe('progreso real del agente', () => {
       now,
       onProgress: (p) => seen.push(p),
     });
-    expect(seen.map((p) => p.id)).toEqual(['knowledge', 'availability', 'proposal']);
+    expect(seen.map((p) => p.id)).toEqual(['model', 'knowledge', 'availability', 'proposal']);
     expect(seen.every((p) => typeof p.label === 'string' && p.label.length > 0)).toBe(true);
     expect(result.kind).toBe('proposal');
     expect(result.execution).toBe('none');
@@ -67,7 +67,7 @@ describe('progreso real del agente', () => {
       now,
       onProgress: (p) => seen.push(p),
     });
-    expect(seen.map((p) => p.id)).toEqual(['agenda', 'proposal']);
+    expect(seen.map((p) => p.id)).toEqual(['model', 'agenda', 'proposal']);
     expect(result.kind).toBe('proposal');
     expect(state.appointments).toHaveLength(3);
     expect(state.audit).toEqual([]);
@@ -90,7 +90,7 @@ describe('progreso real del agente', () => {
     expect(result.kind).toBe('failed');
     expect(result.execution).toBe('none');
     expect(state.proposals).toEqual([]);
-    expect(seen.map((p) => p.id)).toEqual(['proposal']);
+    expect(seen.map((p) => p.id)).toEqual(['model', 'proposal']);
   });
 
   it('límite de pasos termina pausado sin propuestas', async () => {
@@ -108,7 +108,8 @@ describe('progreso real del agente', () => {
     expect(result.kind).toBe('paused');
     expect(state.proposals).toEqual([]);
     expect(seen.length).toBeGreaterThan(0);
-    expect(seen.every((p) => p.id === 'availability')).toBe(true);
+    expect(seen[0].id).toBe('model');
+    expect(seen.slice(1).every((p) => p.id === 'availability')).toBe(true);
   });
 
   it('cancelación aborta y marca el turno pausado sin escrituras', async () => {
@@ -140,6 +141,6 @@ describe('progreso real del agente', () => {
     });
     expect(result.kind).toBe('failed');
     expect(state.proposals).toEqual([]);
-    expect(seen).toEqual([]);
+    expect(seen.map((p) => p.id)).toEqual(['model']);
   });
 });

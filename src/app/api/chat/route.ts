@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { runSecretary } from '@/lib/server/agent';
-import type { ChatProgress } from '@/lib/domain/chat-progress';
+import { phaseProgress, type ChatProgress } from '@/lib/domain/chat-progress';
+import type { ChatDelta } from '@/lib/domain/chat-delta';
 import { DomainError } from '@/lib/domain/agenda';
 import { authSession, type CookieStore } from '@/lib/server/auth';
 import { runConnectedTurn } from '@/lib/server/connected-chat';
+import { createTurnTimer, logTurn } from '@/lib/server/timing';
 import { isServiceWritesConfigured } from '@/lib/supabase/service';
 import {
   apiError,
@@ -76,7 +78,13 @@ export async function POST(request: Request) {
         try {
           // Connected mode is explicit: verified session + org/branch selection + service key.
           // Anything else keeps the local demo flow; Supabase failures are never hidden behind it.
-          const session = tenantId && branchId ? await authSession(await cookieStore()).catch(() => null) : null;
+          const timer = createTurnTimer();
+          let session = null;
+          if (tenantId && branchId) {
+            onProgress(phaseProgress('session'));
+            session = await authSession(await cookieStore()).catch(() => null);
+            timer.checkpoint('session');
+          }
           if (session && tenantId && branchId) {
             if (!isServiceWritesConfigured())
               throw new RequestError(
@@ -95,22 +103,45 @@ export async function POST(request: Request) {
               userCancelled: () => request.signal.aborted,
               onProgress,
             });
-            if (!combined.aborted) send('final', connected);
+            if (!combined.aborted) send('final', connected.delta);
           } else {
             if ((tenantId || branchId || conversationId) && !session)
               throw new RequestError('Sesión vencida. Volvé a ingresar.', 401);
-            const finalState = await withWorkspace(id, async (state) => {
+            onProgress(phaseProgress('context'));
+            const delta = await withWorkspace(id, async (state) => {
               if (state.messages.length >= 80)
                 throw new RequestError('Alcanzaste el límite de esta sesión de demo.', 429);
-              await runSecretary(state, text, { abortSignal: combined, onProgress });
-              return {
-                messages: state.messages,
-                proposals: state.proposals,
-                appointments: state.appointments,
-                audit: state.audit,
+              const beforeMessages = new Set(state.messages.map((m) => m.id));
+              const beforeProposals = new Map(state.proposals.map((p) => [p.id, JSON.stringify(p)]));
+              const beforeAppointments = new Map(state.appointments.map((a) => [a.id, JSON.stringify(a)]));
+              const beforeAudit = new Set(state.audit.map((a) => a.id));
+              const outcome = await runSecretary(state, text, { abortSignal: combined, onProgress, timer });
+              timer.checkpoint('publish');
+              const changed = <T extends { id: string }>(items: T[], before: Map<string, string>) =>
+                items.filter((item) => before.get(item.id) !== JSON.stringify(item));
+              const result: ChatDelta = {
+                messages: state.messages.filter((m) => !beforeMessages.has(m.id)),
+                proposals: changed(state.proposals, beforeProposals),
+                appointments: changed(state.appointments, beforeAppointments),
+                audit: state.audit.filter((a) => !beforeAudit.has(a.id)),
+                conversationId: null,
+                terminal:
+                  outcome.kind === 'paused' ? 'paused' : outcome.kind === 'failed' ? 'failed' : 'published',
               };
+              result.timing = timer.summary();
+              logTurn('chat-turn', {
+                requestId,
+                mode: 'local',
+                terminal: result.terminal,
+                totalMs: Math.round(result.timing.totalMs),
+                steps: result.timing.steps,
+                modelCalls: result.timing.modelCalls,
+                inputTokens: result.timing.inputTokens,
+                outputTokens: result.timing.outputTokens,
+              });
+              return result;
             });
-            if (!combined.aborted) send('final', finalState);
+            if (!combined.aborted) send('final', delta);
           }
         } catch (error) {
           if (!combined.aborted) {

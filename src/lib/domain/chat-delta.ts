@@ -39,7 +39,8 @@ export function applyChatDelta(state: ConversationState, delta: ChatDelta): Conv
   const seenMessages = new Set(state.messages.map((m) => m.id));
   const messages = [...state.messages];
   for (const message of delta.messages) {
-    const { pending: _pending, ...entry } = message;
+    const entry: ChatEntry = { ...message };
+    delete entry.pending;
     if (!seenMessages.has(entry.id)) {
       seenMessages.add(entry.id);
       messages.push(entry);

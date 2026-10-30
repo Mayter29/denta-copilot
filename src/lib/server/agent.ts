@@ -11,8 +11,9 @@ import { z } from 'zod';
 import { availableSlots, DomainError, propose } from '../domain/agenda';
 import { retrieveKnowledge } from '../domain/knowledge';
 import { clinicToday, doctors, services, type Workspace } from '../domain/types';
-import { progressForTool, type ChatProgress } from '../domain/chat-progress';
+import { phaseProgress, progressForTool, type ChatProgress } from '../domain/chat-progress';
 import { RequestError } from './workspace';
+import type { TurnTimer } from './timing';
 import { createHash, randomUUID } from 'node:crypto';
 import {
   resultSchema,
@@ -195,6 +196,7 @@ export async function runSecretary(
     now?: Date;
     abortSignal?: AbortSignal;
     onProgress?: (progress: ChatProgress) => void;
+    timer?: TurnTimer;
   } = {},
 ) {
   const staged = structuredClone(state);
@@ -206,14 +208,23 @@ export async function runSecretary(
       ...state.messages.slice(-18).map((m) => ({ role: m.role, content: m.content })),
       { role: 'user', content: text },
     ];
+    const generateStarted = performance.now();
     const generated = await agent.generate({
       messages,
       abortSignal: options.abortSignal,
+      onStepStart: ({ stepNumber }) => {
+        if (stepNumber === 0) options.onProgress?.(phaseProgress('model'));
+      },
       onToolExecutionStart: ({ toolCall }) => {
         const progress = progressForTool(toolCall.toolName);
         if (progress) options.onProgress?.(progress);
       },
+      onToolExecutionEnd: ({ toolCall, toolExecutionMs }) => {
+        options.timer?.recordTool(toolCall.toolName, toolExecutionMs);
+      },
     });
+    options.timer?.recordModel(performance.now() - generateStarted, generated.usage, generated.steps.length);
+    options.timer?.checkpoint('agent');
     const last = generated.steps.at(-1);
     if (
       generated.finishReason !== 'tool-calls' ||

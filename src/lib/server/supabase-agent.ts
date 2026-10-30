@@ -3,10 +3,11 @@ import { ToolLoopAgent, isStepCount, hasToolCall, tool, type LanguageModel, type
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { DomainError } from '../domain/agenda';
-import { progressForTool, type ChatProgress } from '../domain/chat-progress';
+import { phaseProgress, progressForTool, type ChatProgress } from '../domain/chat-progress';
 import { resultSchema } from '../domain/results';
 import type { Appointment } from '../domain/types';
 import type { CopilotStore } from './copilot-store';
+import type { TurnTimer } from './timing';
 import { zonedTimeToUtc } from './connected-view';
 
 export const CONNECTED_PROMPT_VERSION = 'secretary-v3-connected';
@@ -288,6 +289,7 @@ export async function runSecretaryConnected(input: {
   abortSignal?: AbortSignal;
   userCancelled?: () => boolean;
   onProgress?: (progress: ChatProgress) => void;
+  timer?: TurnTimer;
 }): Promise<
   | { status: 'published'; draft: ConnectedDraft['draft']; proposalIds: string[]; sourceIds: string[] }
   | { status: 'paused' | 'failed' | 'cancelled' }
@@ -303,18 +305,30 @@ export async function runSecretaryConnected(input: {
   };
   try {
     const { agent, finish } = createConnectedSecretary(input);
+    // Deliberately generate(), not stream(): the verified text lives inside the submitResult
+    // tool call, so text deltas would expose partial tool JSON and no publishable prose.
+    // Progress comes from real step/tool events; cards unlock only after publishRun verifies.
     const messages: ModelMessage[] = [
       ...input.reads.history.slice(-18).map((m) => ({ role: m.role, content: m.content })),
       { role: 'user', content: input.text },
     ];
+    const generateStarted = performance.now();
     const generated = await agent.generate({
       messages,
       abortSignal: input.abortSignal,
+      onStepStart: ({ stepNumber }) => {
+        if (stepNumber === 0) input.onProgress?.(phaseProgress('model'));
+      },
       onToolExecutionStart: ({ toolCall }) => {
         const progress = progressForTool(toolCall.toolName);
         if (progress) input.onProgress?.(progress);
       },
+      onToolExecutionEnd: ({ toolCall, toolExecutionMs }) => {
+        input.timer?.recordTool(toolCall.toolName, toolExecutionMs);
+      },
     });
+    input.timer?.recordModel(performance.now() - generateStarted, generated.usage, generated.steps.length);
+    input.timer?.checkpoint('agent');
     const last = generated.steps.at(-1);
     if (
       generated.finishReason !== 'tool-calls' ||
@@ -325,6 +339,7 @@ export async function runSecretaryConnected(input: {
       return fail(input.abortSignal?.aborted ? (input.userCancelled?.() ? 'cancelled' : 'paused') : 'paused');
     }
     const { draft, proposalIds, sources } = finish();
+    input.onProgress?.(phaseProgress('publishing'));
     const published = await store.publishRun({
       actor,
       runId,
@@ -333,6 +348,7 @@ export async function runSecretaryConnected(input: {
       proposalIds,
       sourceIds: [...new Set(draft.sourceIds)].filter((id) => sources.has(id)),
     });
+    input.timer?.checkpoint('publish');
     return { status: 'published', draft: { ...draft, text: published.text }, proposalIds, sourceIds: draft.sourceIds };
   } catch (error) {
     if (error instanceof DomainError) return fail('failed');

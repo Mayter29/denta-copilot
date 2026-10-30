@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ChatProgress } from '@/lib/domain/chat-progress';
-import type { Workspace } from '@/lib/domain/types';
+import type { ChatDelta } from '@/lib/domain/chat-delta';
 
 const progressSchema = z.object({ id: z.string().min(1), label: z.string().min(1).max(120) });
 const contextSchema = z.object({
@@ -11,6 +11,14 @@ const contextSchema = z.object({
 });
 export type ChatContext = z.infer<typeof contextSchema>;
 
+const timingSchema = z.object({
+  totalMs: z.number(),
+  steps: z.number(),
+  modelCalls: z.number(),
+  inputTokens: z.number().optional(),
+  outputTokens: z.number().optional(),
+  phases: z.record(z.string(), z.number()),
+});
 const finalSchema = z.object({
   messages: z.array(z.unknown()),
   proposals: z.array(z.unknown()),
@@ -18,21 +26,11 @@ const finalSchema = z.object({
   audit: z.array(z.unknown()),
   conversationId: z.uuid().nullable().optional(),
   terminal: z.enum(['published', 'paused', 'failed', 'cancelled']).optional(),
+  timing: timingSchema.optional(),
 });
 const errorSchema = z.object({ error: z.string().min(1).max(400) });
 
-export type ChatFinalPayload = Pick<Workspace, 'messages' | 'proposals' | 'appointments' | 'audit'> & {
-  conversationId?: string | null;
-  terminal?: 'published' | 'paused' | 'failed' | 'cancelled';
-  catalog?: {
-    doctors: { id: string; name: string }[];
-    services: { id: string; name: string }[];
-    knowledge: { id: string; title: string; content: string }[];
-    hoursNote: string;
-    timeZone: string;
-  } | null;
-  connected?: boolean;
-};
+export type ChatFinalPayload = ChatDelta;
 
 type ChatEvents = {
   onProgress?: (progress: ChatProgress) => void;

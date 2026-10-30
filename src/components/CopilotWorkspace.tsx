@@ -15,6 +15,7 @@ import {
   Zap,
 } from 'lucide-react';
 import type { Workspace } from '@/lib/domain/types';
+import { applyChatDelta } from '@/lib/domain/chat-delta';
 import { LOCAL_CATALOG, type AgendaCatalog } from '@/lib/domain/catalog';
 import { AgendaPanel } from './AgendaPanel';
 import { ProposalCard } from './ProposalCard';
@@ -148,11 +149,14 @@ export function CopilotWorkspace() {
         : dictation.phase === 'transcribing' || dictation.phase === 'stopping'
           ? 'transcribe'
           : 'reposo';
+  const [pendingUser, setPendingUser] = useState<{ id: string; content: string } | null>(null);
   async function send() {
     if (!draft.trim() || busy || audioActiveRef.current || !state) return;
     setError('');
     chat.clearStatus();
     const text = draft.trim();
+    // Immediate visual answer: the user's own message, marked pending until verified.
+    setPendingUser({ id: `pending-${Date.now()}`, content: text });
     const context =
       connected && selection
         ? {
@@ -169,6 +173,7 @@ export function CopilotWorkspace() {
         : undefined;
     const data = await chat.send(text, context);
     // Stale or cancelled responses return null and must not touch the UI.
+    setPendingUser(null);
     if (!data) {
       textarea.current?.focus();
       return;
@@ -180,7 +185,7 @@ export function CopilotWorkspace() {
         // Conversation persistence is best-effort; the next turn opens a new one.
       }
     }
-    setState((s) => (s ? { ...s, ...data } : s));
+    setState((s) => (s ? { ...s, ...applyChatDelta(s, data) } : s));
     setDraft('');
     textarea.current?.focus();
   }
@@ -313,7 +318,7 @@ export function CopilotWorkspace() {
           <span className="model-pill">Muse Spark</span>
         </div>
         <div className="conversation" aria-live="polite" aria-busy={busy}>
-          {!state?.messages.length ? (
+          {!state?.messages.length && !pendingUser ? (
             <div className="welcome">
               <span className="welcome-kicker">
                 <Sparkles size={14} />
@@ -345,7 +350,7 @@ export function CopilotWorkspace() {
             </div>
           ) : (
             <div className="messages">
-              {state.messages.map((message) => (
+              {state?.messages.map((message) => (
                 <article key={message.id} className={`message ${message.role}`}>
                   <div className="message-avatar">
                     {message.role === 'assistant' ? <DentaMascot size={29} blink={false} /> : 'M'}
@@ -382,7 +387,19 @@ export function CopilotWorkspace() {
                   </div>
                 </article>
               ))}
-              {state.proposals.map((p) => (
+              {pendingUser ? (
+                <article key={pendingUser.id} className="message user" aria-label="Mensaje enviando">
+                  <div className="message-avatar">M</div>
+                  <div>
+                    <span className="message-author">Vos</span>
+                    <div className="message-content">
+                      <Markdown>{pendingUser.content}</Markdown>
+                      <p className="muted small">Enviando…</p>
+                    </div>
+                  </div>
+                </article>
+              ) : null}
+              {state?.proposals.map((p) => (
                 <ProposalCard
                   key={p.id}
                   proposal={p}
