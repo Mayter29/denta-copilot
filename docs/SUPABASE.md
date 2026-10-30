@@ -29,7 +29,7 @@ La raíz de metadatos de PostgREST requiere una clave secreta en este proyecto. 
 
 Conectividad configurada y migración inicial aplicada al proyecto exclusivo. Esto no equivale todavía a login de usuarios ni persistencia de la aplicación en Supabase.
 
-La agenda y el chat siguen en `work/sessions`. Ya existen las tablas, políticas y RPC del esquema inicial remoto; no se cargaron usuarios, organizaciones, citas ni fixtures. No se crearon buckets. Las pruebas de configuración impiden seleccionar accidentalmente otro proyecto, pero no sustituyen pruebas de autorización y RLS con JWT reales.
+La agenda y el chat siguen en `work/sessions`. Ya existen las tablas, políticas y RPC del esquema inicial remoto; no se cargaron organizaciones, citas ni fixtures. Se creó una cuenta de prueba por el dashboard de Auth y se verificó ingreso con contraseña, identidad mediante `getUser` y cierre de esa sesión de prueba. Las credenciales están únicamente en `P:\denta-copilot\secrets`, ignorado por Git; no se guardaron tokens. La cuenta aún no tiene membresías ni acceso a una organización/sede de la demo. No se crearon buckets. Esta comprobación de Auth no sustituye las pruebas pendientes de autorización/RLS entre usuarios ni el login de la aplicación, todavía no implementado.
 
 El [estado de la migración y su verificación remota](DATABASE.md) mantiene el detalle de versión, RLS, permisos y límites. Pendiente: integrar Auth y el adaptador de persistencia, crear datos ficticios controlados y probar sesiones reales de organizaciones/sedes diferentes. Nunca copiar conexiones o datos de Dentary/ECP.
 
