@@ -35,6 +35,8 @@ El chat muestra progreso real por SSE (consultando agenda, disponibilidad, infor
 
 Supabase está fijado a `lyphdzeazqnaepyzzisi` para impedir conexiones accidentales a otros proyectos. Verificar con `pnpm supabase:check`. Ver [configuración y alcance](docs/SUPABASE.md).
 
+La [migración inicial de base de datos](docs/DATABASE.md) separa el núcleo del copiloto de la agenda ficticia para facilitar una futura integración autorizada con Dentary. Está aplicada en el Supabase exclusivo, con RLS y permisos verificados. Se prueba localmente con `pnpm db:check` (requiere Docker); Auth y la conexión de la app a esa persistencia siguen pendientes.
+
 ## Prueba rápida
 
 1. «¿Cuál es el horario y cuánto cuesta una valoración? Citá tus fuentes».
