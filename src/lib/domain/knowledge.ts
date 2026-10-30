@@ -10,13 +10,13 @@ export const knowledge = [
     id: 'hours',
     title: 'Horario y profesionales',
     content:
-      'Atendemos de lunes a viernes de 08:00 a 17:00. Los sábados de 08:00 a 12:00. Domingos cerrado. Dra. Valeria Soto y Dr. Andrés Vega atienden valoración y limpieza. La cita completa debe caber en horario. No se permiten citas simultáneas con el mismo profesional.',
+      'Atendemos de lunes a viernes de 08:00 a 17:00. Los sábados de 08:00 a 12:00. Domingos cerrado. Dra. Valeria Soto, Dr. Andrés Vega y Dra. Camila Reyes atienden valoración, limpieza y extracciones; Dr. Marco Araya atiende ortodoncia. La cita completa debe caber en horario. No se permiten citas simultáneas con el mismo profesional.',
   },
   {
     id: 'services',
     title: 'Servicios y tarifas de demostración',
     content:
-      'Valoración: 30 minutos, ₡15.000. Limpieza dental: 60 minutos, ₡30.000. Precios ficticios para demostración. El agente no diagnostica, prescribe ni recomienda tratamientos.',
+      'Valoración: 30 minutos, ₡15.000. Limpieza dental: 60 minutos, ₡30.000. Extracción simple: 45 minutos, ₡45.000. Control de ortodoncia: 30 minutos, ₡25.000. Precios ficticios para demostración. El agente no diagnostica, prescribe ni recomienda tratamientos.',
   },
   {
     id: 'booking',
