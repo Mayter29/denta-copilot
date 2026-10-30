@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { availableSlots, DomainError, propose } from '../domain/agenda';
 import { retrieveKnowledge } from '../domain/knowledge';
 import { clinicToday, doctors, services, type Workspace } from '../domain/types';
+import { progressForTool, type ChatProgress } from '../domain/chat-progress';
 import { RequestError } from './workspace';
 import { createHash, randomUUID } from 'node:crypto';
 import {
@@ -189,6 +190,7 @@ export async function runSecretary(
     model?: LanguageModel;
     now?: Date;
     abortSignal?: AbortSignal;
+    onProgress?: (progress: ChatProgress) => void;
   } = {},
 ) {
   const staged = structuredClone(state);
@@ -200,7 +202,14 @@ export async function runSecretary(
       ...state.messages.slice(-18).map((m) => ({ role: m.role, content: m.content })),
       { role: 'user', content: text },
     ];
-    const generated = await agent.generate({ messages, abortSignal: options.abortSignal });
+    const generated = await agent.generate({
+      messages,
+      abortSignal: options.abortSignal,
+      onToolExecutionStart: ({ toolCall }) => {
+        const progress = progressForTool(toolCall.toolName);
+        if (progress) options.onProgress?.(progress);
+      },
+    });
     const last = generated.steps.at(-1);
     if (
       generated.finishReason !== 'tool-calls' ||
