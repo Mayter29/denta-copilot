@@ -31,6 +31,6 @@ Conectividad y configuración listas. Esto no equivale a login de usuarios, cons
 
 La agenda y el chat siguen en `work/sessions`. No se crearon tablas, usuarios, políticas, buckets ni registros remotos. No se ejecutaron migraciones. Las pruebas de configuración impiden seleccionar accidentalmente otro proyecto, pero no sustituyen pruebas de autorización y RLS.
 
-Siguiente corte: esquema propio, Auth, RLS, restricciones de agenda y confirmación transaccional. Se implementará exclusivamente en esta referencia, con datos ficticios y migraciones versionadas. Nunca copiar conexiones o datos de Dentary/ECP.
+Existe una [propuesta ejecutable de base de datos](DATABASE.md), validada en PostgreSQL local: esquema propio, RLS, restricciones de agenda y confirmación transaccional. Aún no es una migración remota ni está conectada a la aplicación. Incluye el recorrido de activación pendiente con Auth y pruebas reales de sesión. Se implementará exclusivamente en esta referencia, con datos ficticios. Nunca copiar conexiones o datos de Dentary/ECP.
 
 Referencias: [inicialización del SDK](https://supabase.com/docs/reference/javascript/initializing) y [tipos de claves](https://supabase.com/docs/guides/getting-started/api-keys).
