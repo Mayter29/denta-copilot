@@ -27,10 +27,10 @@ La raíz de metadatos de PostgREST requiere una clave secreta en este proyecto. 
 
 ## Alcance de este avance
 
-Conectividad y configuración listas. Esto no equivale a login de usuarios, consultas de citas, persistencia de conversaciones ni aislamiento de filas.
+Conectividad configurada y migración inicial aplicada al proyecto exclusivo. Esto no equivale todavía a login de usuarios ni persistencia de la aplicación en Supabase.
 
-La agenda y el chat siguen en `work/sessions`. No se crearon tablas, usuarios, políticas, buckets ni registros remotos. No se ejecutaron migraciones. Las pruebas de configuración impiden seleccionar accidentalmente otro proyecto, pero no sustituyen pruebas de autorización y RLS.
+La agenda y el chat siguen en `work/sessions`. Ya existen las tablas, políticas y RPC del esquema inicial remoto; no se cargaron usuarios, organizaciones, citas ni fixtures. No se crearon buckets. Las pruebas de configuración impiden seleccionar accidentalmente otro proyecto, pero no sustituyen pruebas de autorización y RLS con JWT reales.
 
-Existe una [migración inicial versionada](DATABASE.md), validada en PostgreSQL local: esquema propio, RLS, restricciones de agenda y confirmación transaccional. Aún no está aplicada remotamente ni conectada a la aplicación. Incluye el recorrido de activación pendiente con Auth y pruebas reales de sesión. Se implementará exclusivamente en esta referencia, con datos ficticios. Nunca copiar conexiones o datos de Dentary/ECP.
+El [estado de la migración y su verificación remota](DATABASE.md) mantiene el detalle de versión, RLS, permisos y límites. Pendiente: integrar Auth y el adaptador de persistencia, crear datos ficticios controlados y probar sesiones reales de organizaciones/sedes diferentes. Nunca copiar conexiones o datos de Dentary/ECP.
 
 Referencias: [inicialización del SDK](https://supabase.com/docs/reference/javascript/initializing) y [tipos de claves](https://supabase.com/docs/guides/getting-started/api-keys).

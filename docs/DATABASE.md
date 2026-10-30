@@ -2,9 +2,11 @@
 
 ## Estado y objetivo
 
-Migración inicial versionada en `supabase/migrations/20261030052216_initial_copilot_storage.sql`, creada con Supabase CLI 2.122.0 y probada en PostgreSQL local con datos inventados. Consolida los siete archivos de diseño originales en una sola unidad; estos se retiraron para mantener una única fuente SQL. Todavía no está aplicada remotamente. La aplicación continúa usando `work/sessions`.
+Migración inicial aplicada el 29 de octubre de 2026 exclusivamente a `lyphdzeazqnaepyzzisi` mediante el MCP `denta-migrations`. El historial remoto registra `20261030052720_initial_copilot_storage`; el archivo local `supabase/migrations/20261030052720_initial_copilot_storage.sql` usa esa misma versión. Supabase CLI 2.122.0 creó el archivo inicial y MCP asignó la versión al aplicarlo; se sincronizó el nombre local sin repetir DDL ni modificar el historial remoto. Consolida los siete archivos de diseño originales en una sola unidad y fue probada en PostgreSQL local con datos inventados. La aplicación continúa usando `work/sessions`.
 
-El 29 de octubre de 2026 se verificó el nuevo MCP `denta-supabase`: URL restringida al proyecto `lyphdzeazqnaepyzzisi`, consultas con `supabase_read_only_user` y `transaction_read_only=on`. El proyecto usa PostgreSQL 17.11, no tiene tablas en `public` ni migraciones registradas. Existen los esquemas `public` y `extensions`; `pgcrypto` está instalado en `extensions`. La migración instala `btree_gist`, aún ausente, y crea `copilot_private`. El conector anterior sigue sin permiso sobre este proyecto; no debe usarse otro proyecto como alternativa.
+El MCP `denta-supabase` permanece restringido al mismo proyecto, con `supabase_read_only_user` y `transaction_read_only=on`. Antes del despliegue se verificó PostgreSQL 17.11, `public` sin tablas e historial vacío. Ya existían `public`, `extensions` y `pgcrypto`; la migración instaló `btree_gist` 1.7 y creó `copilot_private`. El conector anterior sigue sin permiso sobre este proyecto; no debe usarse otro proyecto como alternativa.
+
+Verificación remota posterior desde la conexión de solo lectura: 20 tablas con RLS habilitado y forzado, 20 políticas SELECT, cero grants directos de escritura a `anon`/`authenticated`/`service_role`/`PUBLIC`, ocho RPC públicas INVOKER ejecutables por servidor y ninguna por anónimos o usuarios. Las 16 funciones privadas DEFINER fijan `search_path`; únicamente los tres helpers de lectura están concedidos a `authenticated`, ninguno a `anon`. No se cargaron fixtures: organizaciones y citas siguen en cero. Esto comprueba el esquema y sus ACL, no el flujo completo de Auth/JWT/HTTP.
 
 El objetivo es conservar conversaciones, propuestas y comprobantes útiles para una futura integración con Dentary, dejando la agenda ficticia como adaptador reemplazable. Esto no certifica compatibilidad con el esquema ni con las APIs actuales de Dentary: no se consultaron sus datos ni se copió código corporativo.
 
@@ -103,8 +105,8 @@ La prueba usa un sustituto mínimo de `auth.users` y `auth.uid()` para simular r
 
 ## Antes de activar persistencia remota
 
-1. Revisar el esquema real, versión PostgreSQL, extensión `btree_gist`, propietario de funciones, roles y esquemas expuestos del proyecto exclusivo. No reemplazarlo por otro proyecto si falta acceso.
-2. Aplicar la migración inicial completa mediante una conexión de escritura restringida al proyecto elegido. No separar tablas, políticas y revocaciones en despliegues intermedios. No aplicar el bootstrap ni fixtures de pruebas al proyecto remoto. Antes y después comprobar el historial de migraciones y conservar en Git la versión realmente registrada; no volver a ejecutar el SQL para corregir solamente el nombre/versionado del archivo.
+1. Completar la revisión de esquemas expuestos por Data API desde el dashboard: `copilot_private` debe permanecer fuera. Los MCP habilitados con `features=database` no exponen advisors; falta la revisión oficial de seguridad por esa vía o el dashboard. El esquema y las ACL sí se verificaron por SQL. No reemplazar el proyecto si falta acceso.
+2. Conservar la migración inicial aplicada y su versión sincronizada. Para futuras modificaciones, crear otra migración y probarla localmente antes de aplicarla. No separar tablas, políticas y revocaciones en despliegues intermedios ni aplicar el bootstrap/fixtures de pruebas remotamente.
 3. Integrar Auth y sesión de servidor; emitir tipos del esquema y crear el adaptador de persistencia con contratos validados. Decidir explícitamente cómo importar o descartar sesiones ficticias locales; no hacer fallback silencioso a archivos cuando falle una escritura remota.
 4. Probar el flujo completo con usuarios ficticios y JWT reales de dos organizaciones/sedes: navegador → endpoint → RPC → RLS → resultado. Comprobar que el modelo sigue sin capacidad de confirmar.
 5. Probar recuperación tras caída del proceso y turnos abandonados. Los estados están modelados, pero no existe todavía un worker que los recupere.
@@ -114,8 +116,8 @@ La fuente guarda versiones y huellas de contenido con índice léxico español; 
 
 ## Acceso para aplicar la migración
 
-Conservar `denta-supabase` como conexión de inspección en solo lectura. Una conexión de mantenimiento separada debe llevar `project_ref=lyphdzeazqnaepyzzisi&features=database`, autenticarse únicamente en `dentacopilot` y mantener las confirmaciones predeterminadas. No se necesita acceso a herramientas de cuenta, otros proyectos ni claves de Dentary/ECP. La autorización OAuth del participante sigue siendo necesaria para habilitar esa conexión; preparar un archivo SQL no la concede.
+`denta-supabase` es la conexión de inspección en solo lectura. `denta-migrations` es la conexión de mantenimiento, autorizada por OAuth por la participante y restringida mediante `project_ref=lyphdzeazqnaepyzzisi&features=database`, con las confirmaciones predeterminadas. Se verificó su URL antes de aplicar la migración. No se usaron herramientas de cuenta, otros proyectos ni claves de Dentary/ECP.
 
-Una vez aplicada: comprobar 20 tablas con RLS habilitado y forzado, ACL de las RPC, esquema privado no expuesto y advisors de seguridad si están disponibles. La creación de tablas por sí sola no habilita la app: Auth, membresías ficticias y las pruebas con JWT reales continúan como un corte separado.
+La creación de tablas por sí sola no habilita la app: Auth, membresías ficticias y las pruebas con JWT reales continúan como un corte separado. El modelo de la aplicación mantiene únicamente herramientas de lectura/propuesta; la conexión MCP de mantenimiento del desarrollador no forma parte de ese catálogo.
 
 Referencias: [RLS de Supabase](https://supabase.com/docs/guides/database/postgres/row-level-security), [funciones y privilegios](https://supabase.com/docs/guides/database/functions) y [rangos y exclusión de PostgreSQL](https://www.postgresql.org/docs/current/rangetypes.html).
