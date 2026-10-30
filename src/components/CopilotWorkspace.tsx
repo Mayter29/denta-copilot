@@ -15,7 +15,8 @@ import {
   Zap,
 } from 'lucide-react';
 import type { Workspace } from '@/lib/domain/types';
-import { AgendaPanel } from './AgendaPanel';
+import type { AgendaCatalog } from './AgendaPanel';
+import { AgendaPanel, LOCAL_CATALOG } from './AgendaPanel';
 import { ProposalCard } from './ProposalCard';
 import { DentaryBrand } from './brand/DentaryBrand';
 import { DentaMascot } from './brand/DentaMascot';
@@ -24,9 +25,15 @@ import { ChatComposer } from './chat/ChatComposer';
 import { ChatProgress } from './chat/ChatProgress';
 import { useChatRequest } from './chat/useChatRequest';
 import { AuthPanel } from './AuthPanel';
-import { fetchSession, type AuthSessionState, type OrgSelection } from '@/lib/client/auth';
+import { useAuthSession } from './useAuthSession';
 
-type View = Workspace & { today: string; modelReady: boolean };
+type View = Workspace & {
+  today: string;
+  modelReady: boolean;
+  catalog?: AgendaCatalog | null;
+  conversationId?: string | null;
+  connected?: boolean;
+};
 const suggestions = [
   {
     icon: CalendarDays,
@@ -73,15 +80,33 @@ export function CopilotWorkspace() {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [audioActive, setAudioActive] = useState(false);
   const audioActiveRef = useRef(false);
-  const [auth, setAuth] = useState<AuthSessionState | null>(null);
-  const [selection, setSelection] = useState<OrgSelection | null>(null);
+  const { auth, selection, handleAuthChange } = useAuthSession();
+  const connected = !!(
+    auth?.authenticated &&
+    auth.serviceWrites &&
+    selection &&
+    auth.contexts.some((c) => c.tenantId === selection.tenantId && c.branchId === selection.branchId)
+  );
+  const conversationKey = selection ? `denta-conversation-${selection.tenantId}/${selection.branchId}` : null;
   const onAudioActivity = useCallback((active: boolean) => {
     audioActiveRef.current = active;
     setAudioActive(active);
   }, []);
   const load = useCallback(async () => {
     try {
-      const data = (await fetchJson('/api/workspace')) as View;
+      let query = '';
+      if (auth?.authenticated && auth.serviceWrites && selection) {
+        let conversationId = '';
+        try {
+          conversationId = window.localStorage.getItem(conversationKey ?? '') ?? '';
+        } catch {
+          conversationId = '';
+        }
+        query =
+          `?tenantId=${selection.tenantId}&branchId=${selection.branchId}` +
+          (conversationId ? `&conversationId=${conversationId}` : '');
+      }
+      const data = (await fetchJson(`/api/workspace${query}`)) as View;
       setState(data);
       setContextOpen(window.matchMedia('(min-width: 931px)').matches);
       setDate((d) => d || data.today);
@@ -89,44 +114,12 @@ export function CopilotWorkspace() {
     } catch (e) {
       setError((e as Error).message);
     }
-  }, []);
+  }, [auth, selection, conversationKey]);
   // Initial synchronization with the local server; updates occur after fetch completes.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
-    void fetchSession()
-      .then((next) => {
-        setAuth(next);
-        if (next.authenticated && next.contexts.length > 0) {
-          try {
-            const stored = JSON.parse(
-              window.localStorage.getItem('denta-org-selection') ?? 'null',
-            ) as OrgSelection | null;
-            const valid = next.contexts.find(
-              (c) => c.tenantId === stored?.tenantId && c.branchId === stored?.branchId,
-            );
-            setSelection(
-              valid
-                ? { tenantId: valid.tenantId, branchId: valid.branchId }
-                : { tenantId: next.contexts[0].tenantId, branchId: next.contexts[0].branchId },
-            );
-          } catch {
-            setSelection({ tenantId: next.contexts[0].tenantId, branchId: next.contexts[0].branchId });
-          }
-        }
-      })
-      .catch(() => setAuth({ authenticated: false }));
   }, [load]);
-  function handleAuthChange(next: AuthSessionState, nextSelection: OrgSelection | null) {
-    setAuth(next);
-    setSelection(nextSelection);
-    try {
-      if (nextSelection) window.localStorage.setItem('denta-org-selection', JSON.stringify(nextSelection));
-      else window.localStorage.removeItem('denta-org-selection');
-    } catch {
-      // Selection persistence is best-effort; the session cookie remains authoritative.
-    }
-  }
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [state?.messages.length, state?.proposals.length, busy, chat.progress?.id]);
@@ -135,11 +128,32 @@ export function CopilotWorkspace() {
     setError('');
     chat.clearStatus();
     const text = draft.trim();
-    const data = await chat.send(text);
+    const context =
+      connected && selection
+        ? {
+            tenantId: selection.tenantId,
+            branchId: selection.branchId,
+            conversationId: (() => {
+              try {
+                return window.localStorage.getItem(conversationKey ?? '') ?? undefined;
+              } catch {
+                return undefined;
+              }
+            })(),
+          }
+        : undefined;
+    const data = await chat.send(text, context);
     // Stale or cancelled responses return null and must not touch the UI.
     if (!data) {
       textarea.current?.focus();
       return;
+    }
+    if (data.conversationId && conversationKey) {
+      try {
+        window.localStorage.setItem(conversationKey, data.conversationId);
+      } catch {
+        // Conversation persistence is best-effort; the next turn opens a new one.
+      }
     }
     setState((s) => (s ? { ...s, ...data } : s));
     setDraft('');
@@ -150,7 +164,17 @@ export function CopilotWorkspace() {
     setProposalBusy(true);
     setError('');
     try {
-      const data = await fetchJson('/api/proposals', { id, approved });
+      const data = await fetchJson(
+        '/api/proposals',
+        connected && selection ? { id, approved, tenantId: selection.tenantId, branchId: selection.branchId } : { id, approved },
+      );
+      if (data.conversationId && conversationKey) {
+        try {
+          window.localStorage.setItem(conversationKey, data.conversationId);
+        } catch {
+          // Best-effort only.
+        }
+      }
       setState((s) => (s ? { ...s, ...data } : s));
       const updated = data.proposals.find((p: { id: string }) => p.id === id);
       if (updated?.status === 'confirmed') {
@@ -164,6 +188,7 @@ export function CopilotWorkspace() {
       setProposalBusy(false);
     }
   }
+  const catalog = state?.catalog ?? LOCAL_CATALOG;
   function choose(text: string) {
     if (busy || audioActiveRef.current) return;
     setDraft(text);
@@ -337,6 +362,8 @@ export function CopilotWorkspace() {
                   proposal={p}
                   busy={busy || audioActive}
                   onDecide={onDecide}
+                  doctors={catalog.doctors}
+                  services={catalog.services}
                 />
               ))}
             </div>
@@ -371,7 +398,7 @@ export function CopilotWorkspace() {
         </div>
       </main>
       {contextOpen && state ? (
-        <AgendaPanel state={state} date={date} onDate={setDate} tab={tab} onTab={setTab} />
+        <AgendaPanel state={state} date={date} onDate={setDate} tab={tab} onTab={setTab} catalog={catalog} />
       ) : null}
     </div>
   );

@@ -26,6 +26,10 @@ const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 const doctorSchema = z.enum(['valeria', 'andres']);
 const serviceSchema = z.enum(['evaluation', 'cleaning']);
+/** Provider model for both local and connected turns. Server-only; never leaves the endpoint. */
+export function providerModel() {
+  return metaModel();
+}
 function metaModel() {
   const apiKey = process.env.META_API_KEY || process.env.MODEL_API_KEY;
   const modelId = process.env.META_MODEL;

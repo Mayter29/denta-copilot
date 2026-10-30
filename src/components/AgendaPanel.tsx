@@ -1,19 +1,36 @@
 import { CalendarDays, Clock3, ArrowUpRight, BookOpen, History } from 'lucide-react';
 import type { Workspace } from '@/lib/domain/types';
-import { doctors, services } from '@/lib/domain/types';
-import { knowledge } from '@/lib/domain/knowledge';
+import { doctors as localDoctors, services as localServices } from '@/lib/domain/types';
+import { knowledge as localKnowledge } from '@/lib/domain/knowledge';
+
+export type AgendaCatalog = {
+  doctors: { id: string; name: string }[];
+  services: { id: string; name: string }[];
+  knowledge: { id: string; title: string; content: string }[];
+  hoursNote: string;
+  timeZone: string;
+};
+export const LOCAL_CATALOG: AgendaCatalog = {
+  doctors: localDoctors,
+  services: localServices,
+  knowledge: localKnowledge,
+  hoursNote: 'Lun–vie 8:00–17:00 · Sáb 8:00–12:00',
+  timeZone: 'America/Costa_Rica',
+};
 export function AgendaPanel({
   state,
   date,
   onDate,
   tab,
   onTab,
+  catalog = LOCAL_CATALOG,
 }: {
   state: Workspace;
   date: string;
   onDate: (v: string) => void;
   tab: string;
   onTab: (v: string) => void;
+  catalog?: AgendaCatalog;
 }) {
   const appointments = state.appointments
     .filter((a) => a.date === date && a.status === 'scheduled')
@@ -58,7 +75,7 @@ export function AgendaPanel({
           </label>
           <div className="agenda-count">
             <span>{appointments.length} citas programadas</span>
-            <span className="badge soft">Costa Rica</span>
+            <span className="badge soft">{catalog.timeZone.replace('_', ' ')}</span>
           </div>
           <div className="appointment-list">
             {appointments.length ? (
@@ -70,10 +87,10 @@ export function AgendaPanel({
                   </div>
                   <div className={`appointment-body ${a.doctorId}`}>
                     <span className="small muted">
-                      {services.find((s) => s.id === a.serviceId)?.name}
+                      {catalog.services.find((s) => s.id === a.serviceId)?.name}
                     </span>
                     <h3>{a.patient}</h3>
-                    <p>{doctors.find((d) => d.id === a.doctorId)?.name}</p>
+                    <p>{catalog.doctors.find((d) => d.id === a.doctorId)?.name}</p>
                     <span className="appointment-status">
                       <span />
                       Programada
@@ -93,7 +110,7 @@ export function AgendaPanel({
             <Clock3 size={17} />
             <div>
               <strong>Horario de atención</strong>
-              <p>Lun–vie 8:00–17:00 · Sáb 8:00–12:00</p>
+              <p>{catalog.hoursNote}</p>
             </div>
           </div>
         </>
@@ -109,7 +126,7 @@ export function AgendaPanel({
             Fuentes ficticias consultables por el agente. Recuperación por texto en esta primera
             versión.
           </p>
-          {knowledge.map((k) => (
+          {catalog.knowledge.map((k) => (
             <article className="source" key={k.id}>
               <BookOpen size={17} />
               <div>
@@ -142,7 +159,7 @@ export function AgendaPanel({
                     }
                   </h3>
                   <p>
-                    {new Date(a.at).toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' })}
+                    {new Date(a.at).toLocaleString('es-CR', { timeZone: catalog.timeZone })}
                   </p>
                   <p>Confirmación registrada por el servidor.</p>
                 </div>

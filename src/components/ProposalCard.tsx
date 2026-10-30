@@ -1,5 +1,5 @@
 import { CalendarCheck2, Check, X } from 'lucide-react';
-import { doctors, services, type Proposal } from '@/lib/domain/types';
+import { doctors as localDoctors, services as localServices, type Proposal } from '@/lib/domain/types';
 const labels = { book: 'Agendar cita', cancel: 'Cancelar cita', reschedule: 'Reagendar cita' };
 const states = {
   pending: 'Pendiente de tu confirmación',
@@ -11,10 +11,14 @@ export function ProposalCard({
   proposal,
   busy,
   onDecide,
+  doctors = localDoctors,
+  services = localServices,
 }: {
   proposal: Proposal;
   busy: boolean;
   onDecide: (id: string, approved: boolean) => void;
+  doctors?: { id: string; name: string }[];
+  services?: { id: string; name: string }[];
 }) {
   const c = proposal.change;
   return (

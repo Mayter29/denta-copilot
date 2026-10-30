@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatProgress } from '@/lib/domain/chat-progress';
-import { sendChat, type ChatFinalPayload } from '@/lib/client/chat';
+import { sendChat, type ChatContext, type ChatFinalPayload } from '@/lib/client/chat';
 
 export function useChatRequest() {
   const [busy, setBusy] = useState(false);
@@ -20,21 +20,23 @@ export function useChatRequest() {
     };
   }, []);
 
-  const send = useCallback(async (text: string): Promise<ChatFinalPayload | null> => {
-    if (abortRef.current) return null;
-    const id = ++requestId.current;
-    const controller = new AbortController();
-    abortRef.current = controller;
-    if (mounted.current) {
-      setBusy(true);
-      setProgress(null);
-      setError('');
-      setCancelled(false);
-    }
-    try {
-      const final = await sendChat(text, {
-        signal: controller.signal,
-        onProgress: (next) => {
+  const send = useCallback(
+    async (text: string, context?: Omit<ChatContext, 'requestId'>): Promise<ChatFinalPayload | null> => {
+      if (abortRef.current) return null;
+      const id = ++requestId.current;
+      const controller = new AbortController();
+      abortRef.current = controller;
+      if (mounted.current) {
+        setBusy(true);
+        setProgress(null);
+        setError('');
+        setCancelled(false);
+      }
+      try {
+        const final = await sendChat(text, {
+          signal: controller.signal,
+          context: context ? { ...context, requestId: crypto.randomUUID() } : undefined,
+          onProgress: (next) => {
           if (requestId.current !== id || controller.signal.aborted) return;
           // Avoid repetitive announcements of the same activity.
           setProgress((current) => (current?.id === next.id ? current : next));
@@ -56,8 +58,10 @@ export function useChatRequest() {
         setProgress(null);
       }
       if (abortRef.current === controller) abortRef.current = null;
-    }
-  }, []);
+      }
+    },
+    [],
+  );
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();

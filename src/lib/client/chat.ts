@@ -3,19 +3,41 @@ import type { ChatProgress } from '@/lib/domain/chat-progress';
 import type { Workspace } from '@/lib/domain/types';
 
 const progressSchema = z.object({ id: z.string().min(1), label: z.string().min(1).max(120) });
+const contextSchema = z.object({
+  tenantId: z.uuid(),
+  branchId: z.uuid(),
+  conversationId: z.uuid().nullable().optional(),
+  requestId: z.uuid(),
+});
+export type ChatContext = z.infer<typeof contextSchema>;
+
 const finalSchema = z.object({
   messages: z.array(z.unknown()),
   proposals: z.array(z.unknown()),
   appointments: z.array(z.unknown()),
   audit: z.array(z.unknown()),
+  conversationId: z.uuid().nullable().optional(),
+  terminal: z.enum(['published', 'paused', 'failed', 'cancelled']).optional(),
 });
 const errorSchema = z.object({ error: z.string().min(1).max(400) });
 
-export type ChatFinalPayload = Pick<Workspace, 'messages' | 'proposals' | 'appointments' | 'audit'>;
+export type ChatFinalPayload = Pick<Workspace, 'messages' | 'proposals' | 'appointments' | 'audit'> & {
+  conversationId?: string | null;
+  terminal?: 'published' | 'paused' | 'failed' | 'cancelled';
+  catalog?: {
+    doctors: { id: string; name: string }[];
+    services: { id: string; name: string }[];
+    knowledge: { id: string; title: string; content: string }[];
+    hoursNote: string;
+    timeZone: string;
+  } | null;
+  connected?: boolean;
+};
 
 type ChatEvents = {
   onProgress?: (progress: ChatProgress) => void;
   signal?: AbortSignal;
+  context?: ChatContext;
 };
 
 /** POST /api/chat as SSE: progress events then a single verified final (or error). */
@@ -23,7 +45,7 @@ export async function sendChat(text: string, events: ChatEvents = {}): Promise<C
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(events.context ? { text, ...contextSchema.parse(events.context) } : { text }),
     signal: events.signal,
   });
   const contentType = response.headers.get('content-type') ?? '';
