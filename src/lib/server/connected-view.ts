@@ -7,6 +7,8 @@ import type {
   Workspace,
 } from '../domain/types';
 import type { ChatDelta } from '../domain/chat-delta';
+import { DomainError } from '../domain/agenda';
+import { getDailyInsights } from '../domain/insights';
 import type { ConnectedReads as AgentReads } from './supabase-agent';
 
 const uuid = z.uuid();
@@ -371,6 +373,89 @@ export async function readConversationView(
     input.timeZone,
   );
   return { messages: view.messages, proposals: view.proposals, audit: view.audit };
+}
+
+/** Availability grid from branch hours, closures and scheduled appointments. Mirrors the local 30-minute grid. */
+export function connectedAvailability(
+  reads: AgentReads,
+  input: { date: string; professionalId: string; serviceId: string },
+  now: Date,
+  timeZone: string,
+): string[] {
+  const service = reads.catalog.services.find((s) => s.id === input.serviceId);
+  if (!service) throw new DomainError('Servicio no disponible.');
+  if (!reads.catalog.professionals.some((p) => p.id === input.professionalId)) throw new DomainError('Profesional no disponible.');
+  if (!reads.catalog.offerings.some((o) => o.professionalId === input.professionalId && o.serviceId === input.serviceId))
+    throw new DomainError('Ese profesional no ofrece ese servicio en esta sede.');
+  const weekday = new Date(`${input.date}T12:00:00Z`).getUTCDay();
+  const dayHours = reads.catalog.hours.filter((h) => h.weekday === weekday);
+  const windows = dayHours.flatMap((h) => {
+    const [oh, om] = h.opens.split(':').map(Number);
+    const [ch, cm] = h.closes.split(':').map(Number);
+    const out: string[] = [];
+    for (let minutes = oh * 60 + om; minutes + service.duration <= ch * 60 + cm; minutes += 30) {
+      out.push(`${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`);
+    }
+    return out;
+  });
+  return windows.filter((time) => {
+    const start = new Date(zonedTimeToUtc(input.date, time, timeZone));
+    if (start.getTime() <= now.getTime()) return false;
+    const end = new Date(start.getTime() + service.duration * 60_000);
+    if (reads.catalog.closures.some((c) => start < new Date(c.endsAt) && end > new Date(c.startsAt))) return false;
+    return !reads.appointments.some((a) => {
+      if (a.status !== 'scheduled' || a.doctorId !== input.professionalId || a.date !== input.date) return false;
+      const existingStart = new Date(zonedTimeToUtc(a.date, a.time, timeZone));
+      return start < new Date(existingStart.getTime() + a.duration * 60_000) && end > existingStart;
+    });
+  });
+}
+
+/** Proactive briefing for the connected copilot. Read-only; no proposals, no writes. */
+export async function readBranchInsights(
+  client: ReaderClient,
+  input: { tenantId: string; branchId: string; timeZone: string; today: string },
+) {
+  const shift = (days: number) => {
+    const cursor = new Date(`${input.today}T12:00:00Z`);
+    cursor.setUTCDate(cursor.getUTCDate() + days);
+    return cursor.toISOString().slice(0, 10);
+  };
+  const start = zonedTimeToUtc(shift(-7), '00:00', input.timeZone);
+  const end = new Date(new Date(zonedTimeToUtc(input.today, '00:00', input.timeZone)).getTime() + 15 * 86_400_000).toISOString();
+  const t = input.tenantId;
+  const b = input.branchId;
+  const [appointments, professionals, services, offerings, hours, closures] = await Promise.all([
+    run(scope(client, 'dc_demo_appointments', 'id,branch_id,professional_id,service_id,patient_label,starts_at,duration_minutes,status,version', t, b)
+      .eq('status', 'scheduled').gte('starts_at', start).lt('starts_at', end).order('starts_at').limit(400), (d) => z.array(appointmentRow).parse(d)),
+    run(scope(client, 'dc_demo_professionals', 'id,name,active', t), (d) => z.array(agentProfessional).parse(d)),
+    run(scope(client, 'dc_demo_services', 'id,name,duration_minutes,price_minor,active', t), (d) => z.array(agentService).parse(d)),
+    run(scope(client, 'dc_demo_offerings', 'professional_id,service_id,active', t, b), (d) =>
+      z.array(z.object({ professional_id: uuid, service_id: uuid, active: z.boolean() })).parse(d)),
+    run(scope(client, 'dc_demo_business_hours', 'weekday,opens_at,closes_at', t, b), (d) => z.array(hoursRow).parse(d)),
+    run(scope(client, 'dc_demo_closures', 'starts_at,ends_at', t, b), (d) =>
+      z.array(z.object({ starts_at: z.string(), ends_at: z.string() })).parse(d)),
+  ]);
+  const reads: AgentReads = {
+    catalog: {
+      professionals: professionals.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name })),
+      services: services.filter((s) => s.active).map((s) => ({ id: s.id, name: s.name, duration: s.duration_minutes, price: s.price_minor })),
+      offerings: offerings.filter((o) => o.active).map((o) => ({ professionalId: o.professional_id, serviceId: o.service_id })),
+      hours: hours.map((h) => ({ weekday: h.weekday, opens: h.opens_at, closes: h.closes_at })),
+      closures: closures.map((c) => ({ startsAt: c.starts_at, endsAt: c.ends_at })),
+    },
+    appointments: appointments.map((a) => mapAppointment(a, input.timeZone)),
+    sources: [],
+    history: [],
+  };
+  const now = new Date();
+  return getDailyInsights(reads.appointments, input.today, (date, professionalId, serviceId) => {
+    try {
+      return connectedAvailability(reads, { date, professionalId, serviceId }, now, input.timeZone);
+    } catch {
+      return [];
+    }
+  });
 }
 
 /** One day of agenda plus the branch catalog names it needs. */

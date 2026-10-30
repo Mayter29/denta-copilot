@@ -3,14 +3,17 @@ import { ToolLoopAgent, isStepCount, hasToolCall, tool, type LanguageModel, type
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { DomainError } from '../domain/agenda';
+import { getDailyInsights } from '../domain/insights';
 import { phaseProgress, progressForTool, type ChatProgress } from '../domain/chat-progress';
 import { resultSchema } from '../domain/results';
 import type { Appointment } from '../domain/types';
 import type { CopilotStore } from './copilot-store';
 import type { TurnTimer } from './timing';
-import { zonedTimeToUtc } from './connected-view';
+import { connectedAvailability, zonedTimeToUtc } from './connected-view';
 
-export const CONNECTED_PROMPT_VERSION = 'secretary-v3-connected';
+export { connectedAvailability };
+
+export const CONNECTED_PROMPT_VERSION = 'secretary-v4-connected-wow';
 
 export type ConnectedCatalog = {
   professionals: { id: string; name: string }[];
@@ -31,42 +34,6 @@ const uuid = z.uuid();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 
-/** Availability grid from branch hours, closures and scheduled appointments. Mirrors the local 30-minute grid. */
-export function connectedAvailability(
-  reads: ConnectedReads,
-  input: { date: string; professionalId: string; serviceId: string },
-  now: Date,
-  timeZone: string,
-): string[] {
-  const service = reads.catalog.services.find((s) => s.id === input.serviceId);
-  if (!service) throw new DomainError('Servicio no disponible.');
-  if (!reads.catalog.professionals.some((p) => p.id === input.professionalId)) throw new DomainError('Profesional no disponible.');
-  if (!reads.catalog.offerings.some((o) => o.professionalId === input.professionalId && o.serviceId === input.serviceId))
-    throw new DomainError('Ese profesional no ofrece ese servicio en esta sede.');
-  const weekday = new Date(`${input.date}T12:00:00Z`).getUTCDay();
-  const dayHours = reads.catalog.hours.filter((h) => h.weekday === weekday);
-  const windows = dayHours.flatMap((h) => {
-    const [oh, om] = h.opens.split(':').map(Number);
-    const [ch, cm] = h.closes.split(':').map(Number);
-    const out: string[] = [];
-    for (let minutes = oh * 60 + om; minutes + service.duration <= ch * 60 + cm; minutes += 30) {
-      out.push(`${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`);
-    }
-    return out;
-  });
-  return windows.filter((time) => {
-    const start = new Date(zonedTimeToUtc(input.date, time, timeZone));
-    if (start.getTime() <= now.getTime()) return false;
-    const end = new Date(start.getTime() + service.duration * 60_000);
-    if (reads.catalog.closures.some((c) => start < new Date(c.endsAt) && end > new Date(c.startsAt))) return false;
-    return !reads.appointments.some((a) => {
-      if (a.status !== 'scheduled' || a.doctorId !== input.professionalId || a.date !== input.date) return false;
-      const existingStart = new Date(zonedTimeToUtc(a.date, a.time, timeZone));
-      return start < new Date(existingStart.getTime() + a.duration * 60_000) && end > existingStart;
-    });
-  });
-}
-
 export function connectedInstructions(reads: ConnectedReads, timeZone: string, today: string) {
   const professionals = reads.catalog.professionals.map((p) => `${p.name} (${p.id})`).join('; ');
   const services = reads.catalog.services.map((s) => `${s.name} (${s.id}, ${s.duration} min)`).join('; ');
@@ -83,7 +50,9 @@ Para agenda consultá listAppointments y findAvailability con los UUID del catá
 No generés propuestas sin que el usuario solicite esa acción y haya definido paciente, fecha, hora y servicio.
 Si falta un dato preguntalo. Si hay varias citas posibles, preguntá cuál. No elijás arbitrariamente.
 Las herramientas de propuesta NO escriben citas. Decí que está pendiente y pedí confirmar la tarjeta.
-Solo un clic del usuario en la tarjeta ejecuta el cambio. Un 'sí' en el chat no confirma.`;
+Solo un clic del usuario en la tarjeta ejecuta el cambio. Un 'sí' en el chat no confirma.
+Si te saludan con buenos días o preguntan qué hay pendiente, llamá getDailyInsights primero y resumí cada sección en voseo con la acción concreta que podés preparar.
+proposeBatchReschedule lista las citas de un profesional en una fecha, busca un espacio libre distinto para cada una y crea una propuesta por cita. Usala cuando un profesional no viene un día. Cada tarjeta se confirma por separado con clic humano.`;
 }
 
 export function createConnectedSecretary(input: {
@@ -250,6 +219,104 @@ export function createConnectedSecretary(input: {
               startsAt,
             });
             return { proposalId: remember(id), startsAt };
+          } catch (error) {
+            if (error instanceof DomainError) return { error: error.message };
+            throw error;
+          }
+        },
+      }),
+      getDailyInsights: tool({
+        description:
+          'Resumen operativo del día: sin confirmar de mañana, inasistencias recientes, huecos libres y pacientes sin cita futura. Solo lectura.',
+        inputSchema: z.object({}),
+        execute: async () =>
+          getDailyInsights(reads.appointments, today, (date, professionalId, serviceId) => {
+            try {
+              return connectedAvailability(reads, { date, professionalId, serviceId }, now, timeZone);
+            } catch {
+              return [];
+            }
+          }),
+      }),
+      proposeBatchReschedule: tool({
+        description:
+          'Reprogramar en lote todas las citas de un profesional en una fecha (p. ej. no viene ese día). Busca un espacio libre por cita y crea una propuesta por cita. Cada tarjeta se confirma por separado.',
+        inputSchema: z.object({
+          professionalId: uuid,
+          date: dateSchema,
+          motivo: z.string().min(4).max(140),
+        }),
+        execute: async ({ professionalId, date, motivo }) => {
+          try {
+            const reason = motivo.trim();
+            if (reason.length < 4 || reason.length > 140)
+              throw new DomainError('Contanos el motivo en 4 a 140 caracteres.');
+            const affected = reads.appointments
+              .filter((a) => a.status === 'scheduled' && a.doctorId === professionalId && a.date === date)
+              .sort((a, b) => a.time.localeCompare(b.time));
+            if (!affected.length)
+              throw new DomainError('No hay citas programadas ese día para ese profesional.');
+            const batchId = randomUUID();
+            const taken: { date: string; start: number; end: number }[] = [];
+            const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
+            const durationOf = (serviceId: string) =>
+              reads.catalog.services.find((s) => s.id === serviceId)?.duration ?? 30;
+            const created: { proposalId: string; appointmentId: string; date: string; time: string }[] = [];
+            const unresolved: { appointmentId: string; patient: string; reason: string }[] = [];
+            for (const appointment of affected) {
+              let placed: { proposalId: string; date: string; time: string } | undefined;
+              let reason = 'Sin espacio en los próximos 14 días.';
+              const duration = durationOf(appointment.serviceId);
+              for (let offset = 1; offset <= 14 && !placed; offset++) {
+                const day = new Date(`${date}T12:00:00Z`);
+                day.setUTCDate(day.getUTCDate() + offset);
+                const candidate = day.toISOString().slice(0, 10);
+                if (day.getUTCDay() === 0) continue;
+                let free: string[] = [];
+                try {
+                  free = connectedAvailability(
+                    reads,
+                    { date: candidate, professionalId, serviceId: appointment.serviceId },
+                    now,
+                    timeZone,
+                  ).filter((time) => {
+                    const start = minutes(time);
+                    const end = start + duration;
+                    return !taken.some((slot) => slot.date === candidate && start < slot.end && end > slot.start);
+                  });
+                } catch (error) {
+                  reason = error instanceof DomainError ? error.message : 'No se pudo consultar disponibilidad.';
+                  continue;
+                }
+                if (!free.length) continue;
+                try {
+                  const startsAt = zonedTimeToUtc(candidate, free[0], timeZone);
+                  const id = await store.proposeDemoAppointment({
+                    actor,
+                    runId,
+                    requestId: idempotentRequest(['batch', batchId, appointment.id]),
+                    operation: 'reschedule',
+                    appointmentId: appointment.id,
+                    expectedVersion: appointment.version,
+                    startsAt,
+                  });
+                  placed = { proposalId: remember(id), date: candidate, time: free[0] };
+                  taken.push({ date: candidate, start: minutes(free[0]), end: minutes(free[0]) + duration });
+                } catch (error) {
+                  reason = error instanceof DomainError ? error.message : 'No se pudo preparar la propuesta.';
+                }
+              }
+              if (placed) created.push({ ...placed, appointmentId: appointment.id });
+              else unresolved.push({ appointmentId: appointment.id, patient: appointment.patient, reason });
+            }
+            if (!created.length) throw new DomainError(unresolved[0]?.reason ?? 'No se pudo preparar la propuesta.');
+            return {
+              batchId,
+              motivo: reason,
+              affected: affected.map((a) => ({ appointmentId: a.id, patient: a.patient, time: a.time })),
+              proposals: created,
+              unresolved,
+            };
           } catch (error) {
             if (error instanceof DomainError) return { error: error.message };
             throw error;

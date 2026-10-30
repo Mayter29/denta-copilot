@@ -8,7 +8,8 @@ import {
 } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
-import { availableSlots, DomainError, propose } from '../domain/agenda';
+import { availableSlots, DomainError, propose, proposeBatchReschedule } from '../domain/agenda';
+import { getDailyInsights } from '../domain/insights';
 import { retrieveKnowledge } from '../domain/knowledge';
 import { clinicToday, doctors, services, type Workspace } from '../domain/types';
 import { phaseProgress, progressForTool, type ChatProgress } from '../domain/chat-progress';
@@ -25,8 +26,8 @@ import {
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
-const doctorSchema = z.enum(['valeria', 'andres']);
-const serviceSchema = z.enum(['evaluation', 'cleaning']);
+const doctorSchema = z.enum(['valeria', 'andres', 'camila', 'marco']);
+const serviceSchema = z.enum(['evaluation', 'cleaning', 'extraction', 'ortho_control']);
 /** Provider model for both local and connected turns. Server-only; never leaves the endpoint. */
 export function providerModel() {
   return metaModel();
@@ -42,7 +43,7 @@ function metaModel() {
   const meta = createOpenAI({ apiKey, baseURL });
   return meta.chat(modelId);
 }
-export const PROMPT_VERSION = 'secretary-v3-denta-follow-up';
+export const PROMPT_VERSION = 'secretary-v4-denta-wow';
 export function createSecretary(state: Workspace, model: LanguageModel, now = new Date()) {
   const sources = new Map<string, SourceEvidence>();
   const proposalIds = new Set<string>();
@@ -83,7 +84,10 @@ Solo un clic del usuario en la tarjeta ejecuta el cambio. Un 'sí' en el chat no
 No afirmés éxito hasta ver estado confirmed en el contexto del servidor. Una tool con error no tuvo éxito.
 Estado actual de propuestas: ${JSON.stringify(state.proposals.slice(-8))}.
 WhatsApp, MCP externo y conversación de voz en vivo todavía no están conectados.
-Solo en /demo: proposeFollowUp prepara un mensaje en español para citas sin confirmar o inasistencias. Requiere clic humano y solo agrega al canal simulado, nunca envía WhatsApp. No contactar citas ya confirmadas.`,
+Solo en /demo: proposeFollowUp prepara un mensaje en español para citas sin confirmar o inasistencias. Requiere clic humano y solo agrega al canal simulado, nunca envía WhatsApp. No contactar citas ya confirmadas.
+Si te saludan con buenos días o preguntan qué hay pendiente, llamá getDailyInsights primero y resumí cada sección con la acción concreta que podés preparar. Hablá en voseo.
+proposeBatchReschedule lista las citas de un profesional en una fecha, busca un espacio libre distinto para cada una y crea una propuesta por cita agrupada en un lote. Usala cuando un profesional no viene un día. Cada fila se confirma por separado o todas juntas, siempre con clic humano.
+Hilo simulado reciente: ${JSON.stringify((state.patientThread ?? []).slice(-6))}. Si el paciente confirmó por ese canal, la asistencia ya está actualizada; si pidió reprogramar o cancelar, la agenda sigue igual y debés proponer el cambio.`,
     tools: {
       submitResult: tool({
         description:
@@ -204,6 +208,36 @@ Solo en /demo: proposeFollowUp prepara un mensaje en español para citas sin con
             return remember(
               propose(state, { ...a, appointmentId, action: 'reschedule', date, time }, now),
             );
+          }),
+      }),
+      getDailyInsights: tool({
+        description:
+          'Resumen operativo del día: sin confirmar de mañana, inasistencias recientes, huecos libres y pacientes sin cita futura. Solo lectura.',
+        inputSchema: z.object({}),
+        execute: async () =>
+          getDailyInsights(state.appointments, clinicToday(now), (date, doctorId, serviceId) =>
+            availableSlots(state, date, doctorId, serviceId, now),
+          ),
+      }),
+      proposeBatchReschedule: tool({
+        description:
+          'Reprogramar en lote todas las citas de un profesional en una fecha (p. ej. no viene ese día). Busca un espacio libre por cita y agrupa las propuestas. Requiere clic humano por fila o lote.',
+        inputSchema: z.object({
+          professionalId: doctorSchema,
+          date: dateSchema,
+          motivo: z.string().min(4).max(140),
+        }),
+        execute: async ({ professionalId, date, motivo }) =>
+          safe(() => {
+            const batch = proposeBatchReschedule(state, { doctorId: professionalId, date, motivo }, now);
+            for (const proposal of batch.proposals) proposalIds.add(proposal.id);
+            return {
+              batchId: batch.batchId,
+              motivo: batch.motivo,
+              affected: batch.affected,
+              proposals: batch.proposals,
+              unresolved: batch.unresolved,
+            };
           }),
       }),
     },
