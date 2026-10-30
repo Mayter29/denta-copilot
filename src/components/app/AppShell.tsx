@@ -1,10 +1,20 @@
 'use client';
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { CalendarDays, Layers2, LogOut, MessageSquare } from 'lucide-react';
+import { CalendarDays, Layers2, Menu, MessageSquare } from 'lucide-react';
 import type { OrgContext } from '@/lib/domain/org-context';
+import { logout as logoutRemote, selectContext } from '@/lib/client/auth';
 import { DentaryBrand } from '../brand/DentaryBrand';
+import { SessionControls } from './SessionControls';
 
 export type AppContextValue = {
   userId: string;
@@ -35,31 +45,69 @@ export function AppShell({
 }: AppContextValue & { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [pending, setPending] = useState<'branch' | 'logout' | null>(null);
+  const [error, setError] = useState('');
+  const actionInFlight = useRef(false);
   const switchBranch = useCallback(
     async (value: string) => {
+      if (actionInFlight.current) return;
       const [tenantId, branchId] = value.split('/');
-      if (!tenantId || !branchId) return;
-      const response = await fetch('/api/auth/context', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantId, branchId }),
-      });
-      if (response.ok) router.refresh();
+      if (!contexts.some((c) => c.tenantId === tenantId && c.branchId === branchId)) return;
+      actionInFlight.current = true;
+      setPending('branch');
+      setError('');
+      try {
+        await selectContext({ tenantId, branchId });
+        router.refresh();
+      } catch (failure) {
+        setError(failure instanceof Error ? failure.message : 'No se pudo cambiar de sede.');
+      } finally {
+        actionInFlight.current = false;
+        setPending(null);
+      }
     },
-    [router],
+    [contexts, router],
   );
   const logout = useCallback(async () => {
-    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
+    setPending('logout');
+    setError('');
     try {
-      for (const key of Object.keys(window.localStorage)) {
-        if (key.startsWith('denta-')) window.localStorage.removeItem(key);
+      await logoutRemote();
+      try {
+        for (const key of Object.keys(window.localStorage)) {
+          if (
+            key.startsWith(`denta-draft-${userId}-`) ||
+            key.startsWith(`denta-conversation-${userId}-`)
+          )
+            window.localStorage.removeItem(key);
+        }
+      } catch {
+        // Local preferences are best-effort; the server confirmed cookie removal.
       }
-    } catch {
-      // Best effort; the session cookie is already cleared server-side.
+      router.replace('/login');
+      router.refresh();
+    } catch (failure) {
+      setError(
+        failure instanceof Error ? failure.message : 'No se pudo cerrar la sesión. Reintentá.',
+      );
+    } finally {
+      actionInFlight.current = false;
+      setPending(null);
     }
-    router.push('/login');
-    router.refresh();
-  }, [router]);
+  }, [router, userId]);
+
+  const sessionControls = (
+    <SessionControls
+      contexts={contexts}
+      selection={selection}
+      pending={pending}
+      error={error}
+      onBranch={(value) => void switchBranch(value)}
+      onLogout={() => void logout()}
+    />
+  );
 
   const contextValue = useMemo(
     () => ({ userId, contexts, selection, serviceWrites }),
@@ -71,7 +119,9 @@ export function AppShell({
         <nav className="sidebar" aria-label="Navegación principal">
           <DentaryBrand placement="sidebar" />
           <div className="workspace-switch">
-            <div className="clinic-avatar">{selection ? selection.tenantName.slice(0, 1) : '?'}</div>
+            <div className="clinic-avatar">
+              {selection ? selection.tenantName.slice(0, 1) : '?'}
+            </div>
             <div>
               <strong>{selection?.tenantName ?? 'Sin organización'}</strong>
               <span>{selection?.branchName ?? 'Seleccioná una sede'}</span>
@@ -90,36 +140,7 @@ export function AppShell({
             </Link>
           ))}
           <div className="sidebar-bottom">
-            <div className="auth-panel" aria-label="Sesión de secretaría">
-              <strong>Sesión verificada</strong>
-              {contexts.length > 0 ? (
-                <label>
-                  <span className="sr-only">Sede activa</span>
-                  <select
-                    value={selection ? `${selection.tenantId}/${selection.branchId}` : ''}
-                    disabled={contexts.length < 2}
-                    onChange={(event) => void switchBranch(event.target.value)}
-                  >
-                    {contexts.map((context) => (
-                      <option
-                        key={`${context.tenantId}/${context.branchId}`}
-                        value={`${context.tenantId}/${context.branchId}`}
-                      >
-                        {context.tenantName} · {context.branchName} ({context.role})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : (
-                <p className="auth-error" role="status">
-                  Sin sedes asignadas. Pedí acceso a tu organización.
-                </p>
-              )}
-              <button type="button" className="secondary" onClick={() => void logout()}>
-                <LogOut size={15} />
-                Cerrar sesión
-              </button>
-            </div>
+            {sessionControls}
             <div className="user-profile">
               <div className="user-avatar">M</div>
               <div>
@@ -129,7 +150,34 @@ export function AppShell({
             </div>
           </div>
         </nav>
-        <main className="main app-main">{children}</main>
+        <main className="main app-main">
+          <header className="workspace-mobile-header">
+            <DentaryBrand placement="header" />
+            <details key={pathname} className="workspace-mobile-menu">
+              <summary>
+                <Menu size={20} />
+                <span>Menú</span>
+              </summary>
+              <div className="workspace-mobile-menu-panel">
+                <nav aria-label="Navegación móvil">
+                  {NAV.map(({ href, label, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className="mobile-nav-link"
+                      aria-current={pathname === href ? 'page' : undefined}
+                    >
+                      <Icon size={18} />
+                      {label}
+                    </Link>
+                  ))}
+                </nav>
+                {sessionControls}
+              </div>
+            </details>
+          </header>
+          {children}
+        </main>
       </div>
     </AppContext.Provider>
   );

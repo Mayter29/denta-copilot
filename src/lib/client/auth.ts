@@ -38,13 +38,20 @@ async function postJson(url: string, body: unknown) {
 }
 
 export async function login(email: string, password: string): Promise<{ userId: string }> {
-  const parsed = z.object({ userId: z.uuid() }).safeParse(await postJson('/api/auth/login', { email, password }));
+  const parsed = z
+    .object({ userId: z.uuid() })
+    .safeParse(await postJson('/api/auth/login', { email, password }));
   if (!parsed.success) throw new Error('Respuesta de ingreso inválida.');
   return parsed.data;
 }
 
 export async function logout(): Promise<void> {
   await postJson('/api/auth/logout', {});
+}
+
+export async function selectContext(selection: OrgSelection): Promise<void> {
+  const input = z.object({ tenantId: z.uuid(), branchId: z.uuid() }).parse(selection);
+  await postJson('/api/auth/context', input);
 }
 
 export async function fetchSession(): Promise<AuthSessionState> {
