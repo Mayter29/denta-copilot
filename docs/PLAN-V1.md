@@ -62,7 +62,7 @@ El contexto conversacional se lee del servidor, con una ventana de 18 mensajes p
 | 1. Chat y agenda               | Hecho local                            | Meta real consulta, propone, confirma y actualiza datos ficticios                   |
 | 2. Conocimiento y dictado      | Micrófono y WAV a borrador locales     | Pendientes: validar hardware/voces/acentos y dispositivos del piloto                |
 | 3. Supabase                    | Conexión verificada; dominio pendiente | Auth, RLS, transacciones, migraciones, semillas y aislamiento probados              |
-| 4. Calidad de conversación     | Contrato y evals iniciales locales     | Pendientes: streaming, recuperación de fallos y presupuesto por sesión              |
+| 4. Calidad de conversación     | Contrato, evals y progreso real locales     | Pendientes: streaming de tokens, recuperación duradera y presupuesto por sesión |
 | 5. Voz en vivo e integraciones | Pendiente de priorización              | Validar capacidad real, latencia, cancelación y costos; MCP/API si aporta a la demo |
 | 6. Entrega                     | Pendiente                              | Demo desplegada, QA, aportes identificables, repo público y video de tres minutos   |
 
