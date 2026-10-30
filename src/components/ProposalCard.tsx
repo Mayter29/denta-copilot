@@ -1,118 +1,107 @@
-import { CalendarCheck2, Check, MessageCircle, X } from 'lucide-react';
-import { doctors, services, type Proposal } from '@/lib/domain/types';
-
+import { CalendarCheck2, Check, X } from 'lucide-react';
+import {
+  doctors as localDoctors,
+  services as localServices,
+  type Proposal,
+} from '@/lib/domain/types';
 const labels = {
-  book: 'Schedule visit',
-  cancel: 'Cancel visit',
-  reschedule: 'Reschedule visit',
-  follow_up: 'Send follow-up',
+  book: 'Agendar cita',
+  cancel: 'Cancelar cita',
+  reschedule: 'Reagendar cita',
+  follow_up: 'Preparar seguimiento simulado',
 };
 const states = {
-  pending: 'Waiting for you',
-  confirmed: 'Applied',
-  rejected: 'Dismissed',
-  expired: 'Expired',
+  pending: 'Pendiente de tu confirmación',
+  confirmed: 'Cambio aplicado',
+  rejected: 'Propuesta descartada',
+  expired: 'Propuesta vencida',
 };
-const reasons = { unconfirmed: 'Has not confirmed', no_show: 'No-show' };
-
 export function ProposalCard({
   proposal,
   busy,
   onDecide,
+  doctors = localDoctors,
+  services = localServices,
 }: {
   proposal: Proposal;
   busy: boolean;
   onDecide: (id: string, approved: boolean) => void;
+  doctors?: { id: string; name: string }[];
+  services?: { id: string; name: string }[];
 }) {
-  const change = proposal.change;
-  const followUp = change.action === 'follow_up';
+  const c = proposal.change;
   return (
     <article className={`proposal ${proposal.status}`}>
       <div className="proposal-title">
-        {followUp ? (
-          <MessageCircle size={19} aria-hidden="true" />
-        ) : (
-          <CalendarCheck2 size={19} aria-hidden="true" />
-        )}
-        <strong>{labels[change.action]}</strong>
+        <CalendarCheck2 size={19} />
+        <strong>{labels[c.action]}</strong>
         <span className="badge">{states[proposal.status]}</span>
       </div>
-      <p className="patient-name">{change.patient.replace(' (demo)', '')}</p>
+      <p className="patient-name">{c.patient}</p>
       <dl className="proposal-details">
         <div>
-          <dt>Service</dt>
-          <dd>{services.find((service) => service.id === change.serviceId)?.name}</dd>
+          <dt>Servicio</dt>
+          <dd>{services.find((s) => s.id === c.serviceId)?.name}</dd>
         </div>
         <div>
-          <dt>Clinician</dt>
-          <dd>{doctors.find((doctor) => doctor.id === change.doctorId)?.name}</dd>
+          <dt>Profesional</dt>
+          <dd>{doctors.find((d) => d.id === c.doctorId)?.name}</dd>
         </div>
         <div>
-          <dt>When</dt>
+          <dt>Fecha</dt>
           <dd>
-            {change.date} · {change.time}
+            {c.date} · {c.time}
           </dd>
         </div>
-        {change.reason ? (
-          <div>
-            <dt>Why</dt>
-            <dd>{reasons[change.reason]}</dd>
-          </div>
-        ) : null}
       </dl>
-      {change.message ? (
-        <blockquote className="patient-quote" lang="es">
-          <span lang="en">Patient will read</span>
-          {change.message}
+      {c.message ? (
+        <blockquote>
+          <strong>Mensaje para el canal simulado:</strong>
+          <p>{c.message}</p>
         </blockquote>
       ) : null}
       {proposal.receipt ? (
         <details>
-          <summary>Server receipt</summary>
+          <summary>Comprobante de ejecución</summary>
           <p className="small">
-            Visit {proposal.receipt.appointment.id} · {proposal.receipt.appointment.status} ·
-            version {proposal.receipt.appointment.version}
+            Cita: {proposal.receipt.appointment.id} · Estado: {proposal.receipt.appointment.status}{' '}
+            · Versión: {proposal.receipt.appointment.version}
           </p>
           <p className="small">
-            Confirmation {proposal.receipt.proposalId} · {proposal.receipt.at}
+            Confirmación: {proposal.receipt.proposalId} · {proposal.receipt.at}
           </p>
         </details>
       ) : null}
       {proposal.status === 'pending' ? (
         <>
           <p className="muted small">
-            {followUp
-              ? 'The message is sent only if you confirm. The card expires in 10 minutes.'
-              : 'The opening is checked again when you confirm. The card expires in 10 minutes.'}
+            {c.action === 'follow_up'
+              ? 'Solo se agrega al canal simulado al confirmar. No envía WhatsApp.'
+              : 'El espacio se vuelve a validar al confirmar.'}{' '}
+            Vigencia: 10 minutos.
           </p>
           <div className="proposal-buttons">
-            <button
-              className="primary"
-              type="button"
-              disabled={busy}
-              onClick={() => onDecide(proposal.id, true)}
-            >
-              <Check size={16} aria-hidden="true" />
-              {followUp ? 'Send to patient' : 'Confirm change'}
+            <button className="primary" disabled={busy} onClick={() => onDecide(proposal.id, true)}>
+              <Check size={16} />
+              {c.action === 'follow_up' ? 'Confirmar mensaje simulado' : 'Confirmar cambio'}
             </button>
             <button
               className="secondary"
-              type="button"
               disabled={busy}
               onClick={() => onDecide(proposal.id, false)}
             >
-              <X size={16} aria-hidden="true" />
-              Dismiss
+              <X size={16} />
+              Descartar
             </button>
           </div>
         </>
       ) : (
         <p className="small muted">
           {proposal.status === 'confirmed'
-            ? followUp
-              ? 'Sent to the simulated patient channel.'
-              : 'Saved in this demo session.'
-            : 'The schedule was left unchanged.'}
+            ? c.action === 'follow_up'
+              ? 'Guardado en el canal simulado de esta sesión.'
+              : 'Guardado en la agenda de esta sesión de demostración.'
+            : 'La agenda conserva su estado anterior.'}
         </p>
       )}
     </article>

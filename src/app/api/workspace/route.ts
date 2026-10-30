@@ -1,7 +1,8 @@
 import { apiError, guardLocal, sessionId, withWorkspace } from '@/lib/server/workspace';
-import { clinicToday, doctors, services } from '@/lib/domain/types';
-import { knowledge } from '@/lib/domain/knowledge';
+import { clinicToday } from '@/lib/domain/types';
 export const runtime = 'nodejs';
+
+/** Local demo state only. Connected areas use /api/conversation, /api/agenda and /api/knowledge. */
 export async function GET(request: Request) {
   try {
     guardLocal(request);
@@ -10,14 +11,11 @@ export async function GET(request: Request) {
       Response.json(
         {
           ...state,
-          doctors,
-          services,
-          knowledge,
+          catalog: null,
+          conversationId: null,
+          connected: false,
           today: clinicToday(),
-          modelReady: !!(
-            (process.env.META_API_KEY || process.env.MODEL_API_KEY) &&
-            process.env.META_MODEL
-          ),
+          modelReady: !!((process.env.META_API_KEY || process.env.MODEL_API_KEY) && process.env.META_MODEL),
         },
         { headers: { 'Cache-Control': 'no-store' } },
       ),

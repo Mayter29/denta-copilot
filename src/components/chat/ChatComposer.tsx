@@ -6,19 +6,20 @@ import { useDictation, type DictationPhase } from './useDictation';
 import { DictationControls, DictationFeedback } from './DictationControls';
 
 const labels: Record<DictationPhase, string> = {
-  idle: 'Dictate into the draft · up to 60 s',
-  requesting: 'Waiting for microphone permission…',
-  recording: 'Recording on this device',
-  stopping: 'Preparing the audio…',
-  transcribing: 'Transcribing with Meta…',
-  retry: 'Audio still needs transcription',
-  review: 'Review the transcript',
+  idle: 'Dictado a borrador · hasta 60 s',
+  requesting: 'Esperando permiso del micrófono…',
+  recording: 'Grabando en este dispositivo',
+  stopping: 'Preparando el audio…',
+  transcribing: 'Transcribiendo con Meta…',
+  retry: 'Audio pendiente de transcripción',
+  review: 'Revisá la transcripción',
 };
 const disclosures: Partial<Record<DictationPhase, string>> = {
-  transcribing: 'Audio was sent to Meta. Cancel stops the wait and does not change the draft.',
+  transcribing:
+    'Audio enviado a Meta. Cancelar detiene la espera e impide añadir texto al borrador.',
   retry:
-    'The audio was already sent to Meta. Retry sends it again. Discard removes it from this session.',
-  review: 'Transcript ready. Choose how to place it in the draft.',
+    'El audio ya se envió a Meta. Reintentar vuelve a enviarlo; descartarlo lo elimina de esta sesión.',
+  review: 'Texto transcrito. Elegí cómo incorporarlo al borrador.',
 };
 type Props = {
   draft: string;
@@ -27,6 +28,7 @@ type Props = {
   disabled: boolean;
   busy: boolean;
   onActivityChange: (active: boolean) => void;
+  onPresence?: (presence: { phase: DictationPhase; level: number }) => void;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
 };
 export function ChatComposer({
@@ -36,6 +38,7 @@ export function ChatComposer({
   disabled,
   busy,
   onActivityChange,
+  onPresence,
   textareaRef,
 }: Props) {
   const onTranscript = useCallback(
@@ -48,7 +51,7 @@ export function ChatComposer({
     },
     [draft, onDraftChange, textareaRef],
   );
-  const dictation = useDictation({ onTranscript, onActivityChange });
+  const dictation = useDictation({ onTranscript, onActivityChange, onPresence });
   const active = dictation.phase !== 'idle';
   const recording = dictation.phase === 'recording';
   const pending = ['requesting', 'stopping', 'transcribing'].includes(dictation.phase);
@@ -72,7 +75,7 @@ export function ChatComposer({
         aria-busy={busy || pending}
       >
         <label htmlFor="chat-draft" className="sr-only">
-          Message to Denta
+          Mensaje al copiloto
         </label>
         <textarea
           ref={textareaRef}
@@ -81,7 +84,7 @@ export function ChatComposer({
           maxLength={2000}
           disabled={disabled || active}
           onChange={(event) => onDraftChange(event.target.value)}
-          placeholder="Ask Denta to confirm, reschedule, or follow up…"
+          placeholder="Preguntame algo o prepará una cita…"
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault();
@@ -94,7 +97,7 @@ export function ChatComposer({
           <button
             className="send-button"
             type="submit"
-            aria-label="Send message"
+            aria-label="Enviar mensaje"
             disabled={disabled || active || !draft.trim()}
           >
             {busy ? <LoaderCircle size={19} className="spinner" /> : <ArrowUp size={20} />}
@@ -108,23 +111,23 @@ export function ChatComposer({
         {recording ? (
           <>
             <span aria-hidden="true"> · {String(dictation.seconds).padStart(2, '0')} / 60 s</span>
-            <meter aria-label="Microphone level" min={0} max={1} value={dictation.level} />
+            <meter aria-label="Nivel del micrófono" min={0} max={1} value={dictation.level} />
           </>
         ) : null}
       </div>
       <div className="composer-hint">
         <span>
-          <Command size={12} /> Enter to send · Shift + Enter for a new line
+          <Command size={12} /> Enter para enviar · Shift + Enter para nueva línea
         </span>
         <span>{draft.length}/2000</span>
       </div>
       <p className="dictation-caption">
         {disclosures[dictation.phase] ??
-          'Stopping, or reaching 60 s, sends the audio to Meta. Cancel first to keep it here.'}
+          'Al detener, o a los 60 s, se envía a Meta. Cancelá antes para no enviarlo.'}
       </p>
       <p className="composer-disclaimer">
         <ShieldCheck size={12} />
-        Fictional data only. Review the draft, then confirm each card.
+        Solo datos ficticios. Revisá el texto antes de enviarlo y confirmá cada cambio.
       </p>
     </>
   );

@@ -47,7 +47,7 @@ export function verifyResult(
     // Action state is exclusively server text; model prose cannot announce a write.
     text:
       draft.kind === 'proposal'
-        ? 'Proposal ready. Review the card and confirm with a click. Nothing is written until you do.'
+        ? 'Propuesta pendiente. Revisá la tarjeta y confirmá con un clic para aplicar el cambio.'
         : draft.text,
     sources: resolvedSources,
     proposals,

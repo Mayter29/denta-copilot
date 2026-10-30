@@ -4,35 +4,26 @@ Copiloto de recepción para clínicas dentales: convierte una conversación en p
 
 ## Arrancar
 
-Requiere Node.js 22+ y pnpm 10.12.1. Desde la raíz del repositorio:
+Requiere Node.js 22+ y pnpm 10.12.1.
 
-```bash
+```powershell
+cd P:\denta-copilot
 pnpm install --frozen-lockfile
-test -f .env.local || cp .env.example .env.local
+Copy-Item .env.example .env.local # Solo si todavía no existe. No sobrescribir una clave configurada.
 ```
 
-No sobrescribir un `.env.local` que ya tenga claves. El archivo está ignorado por Git. Las variables viven solo en el servidor: no usar el prefijo `NEXT_PUBLIC_` para la clave del modelo.
+Completar `META_API_KEY`, `META_MODEL=muse-spark-1.3` y `DEMO_SESSION_SECRET` (mínimo 32 caracteres aleatorios). Conservar `DEMO_MODE=true`.
 
-| Variable              | Obligatoria | Qué espera                                                             |
-| --------------------- | ----------- | ---------------------------------------------------------------------- |
-| `META_API_KEY`        | Sí          | Clave de la API de modelos de Meta                                     |
-| `META_MODEL`          | Sí          | Identificador del modelo. En esta demo: `muse-spark-1.3`               |
-| `DEMO_SESSION_SECRET` | Sí          | Secreto aleatorio de al menos 32 caracteres. Firma la cookie de sesión |
-| `DEMO_MODE`           | Sí          | `true` para habilitar la demo local                                    |
-
-`META_BASE_URL` es opcional y, si se define, tiene que seguir siendo `https://api.meta.ai/v1`. Supabase se documenta en [docs/SUPABASE.md](docs/SUPABASE.md); la agenda de esta demo no escribe ahí.
-
-```bash
+```powershell
 pnpm dev
 ```
 
-Abrir [la demo local](http://127.0.0.1:3420). El proceso escucha únicamente en loopback.
+Abrir [la demo local](http://127.0.0.1:3420). El proceso escucha únicamente en loopback. La clave queda en el servidor y `.env.local` está ignorado por Git.
 
 ## Qué funciona hoy
 
 - Chat real con Meta Model API, Muse Spark y AI SDK 7.
-- Consultas de disponibilidad, reservas, cancelaciones, reagendamiento y seguimiento de quien no confirmó o no asistió. El seguimiento propone un mensaje en español y solo se envía al confirmar la tarjeta.
-- Escritorio en inglés para el equipo. El canal del paciente es una simulación dentro de la app, con aspecto de mensajería. No hay API de WhatsApp.
+- Consultas de disponibilidad, reservas, cancelaciones y reagendamiento mediante herramientas tipadas.
 - Resultados estructurados con referencias verificadas por turno, estados explícitos y comprobantes del servidor al confirmar.
 - Propuestas guardadas por servidor; solo un clic de confirmación ejecuta el cambio.
 - Horarios, duración, choques, vencimiento, control de versión, confirmación idempotente y auditoría.
@@ -40,9 +31,11 @@ Abrir [la demo local](http://127.0.0.1:3420). El proceso escucha únicamente en 
 - Micrófono con permiso explícito: grabar, detener y transcribir con Muse Voice Transcribe a un borrador editable. Cancelación, reintento y límite de 60 s; no se envía automáticamente al chat. Ver [flujo y límites del dictado](docs/DICTADO.md).
 - Datos de cada sesión en `work/sessions`, separados con cookie firmada HttpOnly. Persisten recargas y reinicios del proceso local.
 
-El chat espera la respuesta completa; todavía no transmite tokens progresivamente. La conexión al Supabase exclusivo de este proyecto está configurada y verificada; la agenda y el chat aún usan archivos locales. No hay despliegue: `guardLocal` solo acepta `localhost:3420` o `127.0.0.1:3420`, y las sesiones viven en `work/sessions` de un solo proceso. WhatsApp, servidor MCP y voz en vivo siguen pendientes. Esa persistencia es para datos ficticios. No es el almacenamiento de producción.
+El chat muestra progreso real por SSE (consultando agenda, disponibilidad, información, preparando propuesta) derivado de herramientas ejecutadas; todavía no transmite tokens progresivamente. La conexión al Supabase exclusivo de este proyecto está configurada y verificada; la agenda y el chat aún usan archivos locales. WhatsApp, servidor MCP y voz en vivo siguen pendientes. La persistencia local es para un único proceso y datos ficticios. No es el almacenamiento de producción.
 
 Supabase está fijado a `lyphdzeazqnaepyzzisi` para impedir conexiones accidentales a otros proyectos. Verificar con `pnpm supabase:check`. Ver [configuración y alcance](docs/SUPABASE.md).
+
+La [migración inicial de base de datos](docs/DATABASE.md) separa el núcleo del copiloto de la agenda ficticia para facilitar una futura integración autorizada con Dentary. Está aplicada en el Supabase exclusivo, con RLS y permisos verificados. Se prueba localmente con `pnpm db:check` (requiere Docker); Auth y la conexión de la app a esa persistencia siguen pendientes.
 
 ## Prueba rápida
 

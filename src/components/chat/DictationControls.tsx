@@ -12,7 +12,7 @@ export function DictationControls({
   const recording = dictation.phase === 'recording';
   const active = dictation.phase !== 'idle';
   const pending = ['requesting', 'stopping', 'transcribing'].includes(dictation.phase);
-  const label = recording ? 'Stop and transcribe' : 'Record with microphone';
+  const label = recording ? 'Detener y transcribir' : 'Grabar con micrófono';
   return (
     <>
       {active ? (
@@ -20,8 +20,8 @@ export function DictationControls({
           className="composer-audio"
           type="button"
           onClick={dictation.cancel}
-          aria-label="Discard dictation"
-          title="Discard dictation"
+          aria-label="Descartar dictado"
+          title="Descartar dictado"
         >
           <X size={19} />
         </button>
@@ -32,8 +32,8 @@ export function DictationControls({
         aria-label={label}
         title={
           recording
-            ? 'Stop and send the audio to Meta for a draft transcript'
-            : 'Record up to 60 seconds. Stopping sends the audio to Meta for a transcript.'
+            ? 'Detener y enviar el audio a Meta para transcribir a borrador'
+            : 'Grabar hasta 60 segundos. Al detener, el audio se envía a Meta para transcribir.'
         }
         disabled={disabled || (active && !recording)}
         onClick={() => {
@@ -69,7 +69,7 @@ export function DictationFeedback({
       ) : null}
       {dictation.phase === 'review' ? (
         <div className="dictation-review">
-          <label htmlFor="dictation-overflow">Saved transcript</label>
+          <label htmlFor="dictation-overflow">Transcripción conservada</label>
           <textarea id="dictation-overflow" value={dictation.transcript} readOnly />
           <button
             type="button"
@@ -78,13 +78,13 @@ export function DictationFeedback({
               dictation.finishReview();
             }}
           >
-            Use as the new draft
+            Usar como nuevo borrador
           </button>
         </div>
       ) : null}
       {dictation.phase === 'retry' ? (
         <button type="button" className="dictation-retry" onClick={dictation.retry}>
-          Retry transcription
+          Reintentar transcripción
         </button>
       ) : null}
     </>

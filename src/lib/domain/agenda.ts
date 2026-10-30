@@ -7,6 +7,7 @@ import {
   type Attendance,
   type Change,
   type Proposal,
+  type PatientMessage,
   type Workspace,
 } from './types';
 
@@ -22,7 +23,9 @@ export function previousOpenDay(date: string) {
   return clinicToday(cursor);
 }
 
-export function seedWorkspace(date = clinicToday()): Workspace {
+export function seedWorkspace(
+  date = clinicToday(),
+): Workspace & { patientThread: PatientMessage[] } {
   const missed = previousOpenDay(date);
   return {
     appointments: [
@@ -90,7 +93,10 @@ export function seedWorkspace(date = clinicToday()): Workspace {
 export function hydrateWorkspace(state: Workspace): Workspace {
   state.appointments = state.appointments.map((appointment) => ({
     ...appointment,
-    attendance: attendances.has(appointment.attendance) ? appointment.attendance : 'confirmed',
+    attendance:
+      appointment.attendance && attendances.has(appointment.attendance)
+        ? appointment.attendance
+        : 'confirmed',
   }));
   state.patientThread ??= [];
   return state;

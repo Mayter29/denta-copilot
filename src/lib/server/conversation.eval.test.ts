@@ -62,7 +62,7 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
       { model, now },
     );
     expect(result.kind).toBe('proposal');
-    expect(result.text).toContain('Proposal ready');
+    expect(result.text).toContain('Propuesta pendiente');
     expect(result.proposals[0].change).toEqual({ action: 'book', ...booking });
     expect(state.appointments).toHaveLength(3);
     expect(state.audit).toEqual([]);
@@ -251,7 +251,7 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
     ]);
     const result = await runSecretary(state, 'Hacé seguimiento a Luis', { model, now });
     expect(result.kind).toBe('proposal');
-    expect(result.text).toContain('Proposal ready');
+    expect(result.text).toContain('Propuesta pendiente');
     expect(result.execution).toBe('none');
     expect(state.patientThread).toHaveLength(before);
     expect(state.audit).toEqual([]);

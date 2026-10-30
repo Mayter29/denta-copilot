@@ -72,7 +72,7 @@ export function BrandReview() {
               <div className={styles.productBrand}>
                 <Image src="/brand/dentary/dentary-icon.svg" alt="" width={31} height={31} />
                 <strong>
-                  Denta<small>by Dentary</small>
+                  Denta Copilot<small>de Dentary</small>
                 </strong>
               </div>
               <span className={styles.demo}>DEMO</span>
@@ -88,7 +88,7 @@ export function BrandReview() {
               <div className={styles.chatMessage}>
                 <DentaMascot mood={state.mood} size={32} />
                 <div>
-                  <strong>Denta</strong>
+                  <strong>Denta Copilot</strong>
                   <p aria-live="polite">{state.message}</p>
                 </div>
               </div>

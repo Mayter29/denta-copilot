@@ -21,7 +21,7 @@ describe('contrato verificable', () => {
       new Map(),
       new Set([proposal.id]),
     );
-    expect(result.text).toContain('Proposal ready');
+    expect(result.text).toContain('Propuesta pendiente');
     expect(result.execution).toBe('none');
     expect(result.proposals[0].change).toEqual(change);
     expect(state.appointments).toHaveLength(3);

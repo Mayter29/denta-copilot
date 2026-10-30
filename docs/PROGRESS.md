@@ -1,5 +1,7 @@
 # Progreso · 27 de octubre de 2026
 
+Registro histórico. El estado conectado al 30 de octubre está en [SUPABASE.md](SUPABASE.md). Al integrar las ramas se conservó el seguimiento con confirmación humana exclusivamente en `/demo`, con canal simulado; el escritorio anterior se sustituyó por las rutas separadas de login, copiloto, agenda y conocimiento en español. El agente conectado no ofrece seguimiento ni envíos a pacientes.
+
 Corte local sobre `fe0f47a`. No está desplegado. `pnpm check` es la verificación de este corte; no se corrió `pnpm eval:live`.
 
 ## Hecho

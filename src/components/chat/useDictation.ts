@@ -8,8 +8,9 @@ export type DictationPhase =
 type Options = {
   onTranscript: (text: string) => boolean;
   onActivityChange: (active: boolean) => void;
+  onPresence?: (presence: { phase: DictationPhase; level: number }) => void;
 };
-export function useDictation({ onTranscript, onActivityChange }: Options) {
+export function useDictation({ onTranscript, onActivityChange, onPresence }: Options) {
   const [state, setState] = useState({
     phase: 'idle' as DictationPhase,
     seconds: 0,
@@ -18,6 +19,7 @@ export function useDictation({ onTranscript, onActivityChange }: Options) {
     transcript: '',
   });
   const phase = useRef<DictationPhase>('idle');
+  const lastLevel = useRef(0);
   const capture = useRef<MicrophoneCapture | null>(null);
   const audio = useRef<Blob | null>(null);
   const request = useRef<AbortController | null>(null);
@@ -25,7 +27,10 @@ export function useDictation({ onTranscript, onActivityChange }: Options) {
 
   function transition(next: DictationPhase, error = '', transcript = '') {
     phase.current = next;
+    lastLevel.current = 0;
     onActivityChange(next !== 'idle');
+    // Event-driven presence for Denta; no effect needed downstream.
+    onPresence?.({ phase: next, level: 0 });
     setState((previous) => ({ ...previous, phase: next, error, transcript }));
   }
   function cancel() {
@@ -53,7 +58,7 @@ export function useDictation({ onTranscript, onActivityChange }: Options) {
       else
         transition(
           'review',
-          'The transcript does not fit in the current draft. Copy it or use it as a new draft.',
+          'El texto no cabe junto al borrador actual. Copialo o elegí usarlo como nuevo borrador.',
           text,
         );
     } catch (error) {
@@ -61,10 +66,10 @@ export function useDictation({ onTranscript, onActivityChange }: Options) {
       transition(
         'retry',
         error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name)
-          ? 'Transcription took too long. You can retry with the audio kept in this session.'
+          ? 'La transcripción tardó demasiado. Podés reintentar con el audio conservado.'
           : error instanceof Error
             ? error.message
-            : 'The audio could not be transcribed.',
+            : 'No se pudo transcribir el audio.',
       );
     } finally {
       if (request.current === controller) request.current = null;
@@ -95,7 +100,13 @@ export function useDictation({ onTranscript, onActivityChange }: Options) {
     setState((previous) => ({ ...previous, seconds: 0, level: 0 }));
     const current = new MicrophoneCapture({
       onProgress: (seconds, level) => {
-        if (generation.current === token) setState((previous) => ({ ...previous, seconds, level }));
+        if (generation.current !== token) return;
+        // Throttle live level to avoid render churn; transitions go through transition().
+        if (Math.abs(level - lastLevel.current) >= 0.08) {
+          lastLevel.current = level;
+          onPresence?.({ phase: 'recording', level });
+        }
+        setState((previous) => ({ ...previous, seconds, level }));
       },
       onLimit: () => {
         void stop();
@@ -106,7 +117,7 @@ export function useDictation({ onTranscript, onActivityChange }: Options) {
           capture.current = null;
           transition(
             'idle',
-            'Recording stopped and was discarded. Record again when you are ready.',
+            'La grabación se interrumpió y fue descartada. Volvé a grabar cuando estés lista.',
           );
         }
       },
@@ -137,7 +148,7 @@ export function useDictation({ onTranscript, onActivityChange }: Options) {
       capture.current = null;
       transition(
         'idle',
-        'The recording was discarded when you left the page. Record again to continue.',
+        'La grabación se descartó al salir de la página. Volvé a grabar para continuar.',
       );
     }
   });

@@ -81,6 +81,25 @@ it('ID ajeno, conflicto y rechazo no emiten comprobantes ni escriben', async () 
   expect((await rejected.json()).receipt).toBeNull();
   expect(memory.state!.audit).toHaveLength(1);
 });
+it('el seguimiento confirmado devuelve el hilo simulado sin alterar la agenda ni duplicar el mensaje', async () => {
+  const state = memory.state!;
+  const appointment = state.appointments.find((item) => item.id === 'demo-luis')!;
+  const before = structuredClone(state.appointments);
+  const message = 'Hola Luis, ¿podés confirmar tu cita ficticia?';
+  const proposal = propose(
+    state,
+    { ...appointment, action: 'follow_up', appointmentId: appointment.id, message },
+    now,
+  );
+  const first = await confirm(request({ id: proposal.id, approved: true }));
+  const repeated = await confirm(request({ id: proposal.id, approved: true }));
+  expect(first.status).toBe(200);
+  const body = await first.json();
+  expect(body.patientThread.at(-1)).toMatchObject({ body: message, proposalId: proposal.id });
+  expect((await repeated.json()).patientThread).toEqual(body.patientThread);
+  expect(state.appointments).toEqual(before);
+  expect(state.audit).toHaveLength(1);
+});
 it('audio devuelve solo borrador: no abre chat ni propone ni confirma', async () => {
   vi.stubEnv('META_API_KEY', 'fake-test-key');
   vi.stubGlobal(

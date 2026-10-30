@@ -1,5 +1,18 @@
 # Validación · 27 de octubre de 2026
 
+## Continuación y QA · 30 de octubre de 2026
+
+- `pnpm check`: lint, tipos, 186 pruebas en 35 archivos y build aprobados. El harness admite pruebas React `.test.tsx` además de `.test.ts`.
+- Navegador interactivo: login real, estado explícito sin clave de escritura, cierre de sesión y redirección de una ruta protegida después de salir. Se corrigió el menú del área conectada: en pantallas compactas ahora permite navegar, ver/cambiar sede y cerrar sesión. Antes la CSS ocultaba todos esos controles.
+- Los fallos de cierre/cambio de sede se muestran sin fingir éxito ni redirigir. Una sola acción de sesión puede estar pendiente; al salir correctamente se limpian solo las preferencias del usuario actual. Pruebas de regresión de fallos, reintento, selección y doble acción.
+- Mascota: revisión visual interactiva de silueta/volumen y estados en escritorio y móvil, a través de `/brand-review`; pausa manual del avatar comprobada en `/demo`. La página de revisión renderiza tamaños de 24/32/40/52/92 px y muestras claras/oscuras. La geometría y reduced motion también tienen las pruebas del rig del corte anterior; no se afirma una auditoría completa de accesibilidad o dispositivos.
+- Un turno informativo con Meta real en `/demo`: respuesta de horario con fuente verificada, dos pasos del agente, **5153 ms** totales medidos por el servidor, 4398 tokens de entrada y 799 de salida reportados por el SDK. Sin propuestas ni escrituras de agenda. Es una sola muestra del modo local y no una medición del recorrido conectado o de producción; no se calcularon percentiles.
+- `pnpm db:check`: semilla controlada y asignación probadas en una transacción local que se revierte; aislamiento, publicación, recuperación, doble clic y conflictos concurrentes entre sedes aprobados. Se corrigieron el `ends_at` obligatorio, las citas de fin de semana fuera de horario y la atomicidad de ambos scripts de semilla.
+- Se aplicaron semilla y membresía en una sola transacción al Supabase exclusivo: una clínica/sede, dos profesionales, dos servicios, tres fuentes, tres citas ficticias y una membresía de secretaría. Las citas se comprobaron completas y futuras. No se modificó la migración inicial ni se crearon cuentas adicionales.
+- React Doctor: ocho avisos existentes, ninguno en el shell/controles nuevos; cuatro recomendaciones de API Zod y cuatro avisos de complejidad/tamaño en DemoWorkspace/CopilotArea. No se silenciaron reglas.
+- Evidencias locales en `work/qa-20261030`, ignoradas por Git. Se logró guardar capturas desde el navegador interactivo; la limitación previa de capturas headless no implica ausencia de estas evidencias.
+- Pendiente: configurar la clave de escritura exclusivamente servidor y verificar reserva/reagendamiento/cancelación contra Supabase, persistencia al recargar y aislamiento con JWT de cuentas de prueba diferentes. No hubo despliegue ni merge a main. No se implementó voz bidireccional/WebRTC en este corte.
+
 Historia probada: el usuario pide una operación administrativa por chat → API local → Meta Model API → herramientas tipadas → tarjeta pendiente → confirmación → escritura y actualización de la agenda ficticia.
 
 ## Evidencia obtenida

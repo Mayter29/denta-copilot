@@ -15,7 +15,8 @@
     "doctor": "pnpm react:doctor",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "format": "prettier --write src docs *.json *.ts *.mjs *.md",
-    "supabase:check": "node --experimental-strip-types scripts/check-supabase.mjs"
+    "supabase:check": "node --experimental-strip-types scripts/check-supabase.mjs",
+    "db:check": "node scripts/check-database.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.103",

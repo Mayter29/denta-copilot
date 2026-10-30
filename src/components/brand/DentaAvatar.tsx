@@ -1,9 +1,36 @@
 'use client';
 import { useState } from 'react';
-import { DentaMascot } from './DentaMascot';
+import { DentaMascot, type DentaActivity, type DentaMood } from './DentaMascot';
 
-export function DentaAvatar({ busy }: { busy: boolean }) {
+export type DentaPresence = 'reposo' | 'escucha' | 'transcribe' | 'consulta' | 'exito';
+const MOOD: Record<DentaPresence, DentaMood> = {
+  reposo: 'neutral',
+  escucha: 'sorprendido',
+  transcribe: 'pensando',
+  consulta: 'pensando',
+  exito: 'feliz',
+};
+const ACTIVITY: Record<DentaPresence, DentaActivity> = {
+  reposo: 'idle',
+  escucha: 'listening',
+  transcribe: 'transcribing',
+  consulta: 'thinking',
+  exito: 'idle',
+};
+
+/** Product adapter: chat/dictation presence -> rig mood/activity/level. No audio, model or agenda logic here. */
+export function DentaAvatar({
+  busy,
+  presence = 'reposo',
+  level = 0,
+}: {
+  busy: boolean;
+  presence?: DentaPresence;
+  level?: number;
+}) {
   const [animated, setAnimated] = useState(true);
+  const effective: DentaPresence = busy && presence !== 'exito' ? 'consulta' : presence;
+  const listening = effective === 'escucha';
   return (
     <button
       type="button"
@@ -15,9 +42,12 @@ export function DentaAvatar({ busy }: { busy: boolean }) {
     >
       <DentaMascot
         size={48}
-        mood={busy ? 'pensando' : 'neutral'}
-        animate={animated}
-        blink={animated}
+        mood={MOOD[effective]}
+        activity={ACTIVITY[effective]}
+        level={listening ? level : 0}
+        blink={effective === 'reposo'}
+        interactive={animated}
+        paused={!animated}
       />
     </button>
   );

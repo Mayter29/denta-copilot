@@ -1,14 +1,15 @@
 'use client';
 import { useState } from 'react';
 import type { Appointment, PatientMessage } from '@/lib/domain/types';
+import styles from './PatientThread.module.css';
 
 const attendanceLabel = {
-  confirmed: 'Confirmed',
-  unconfirmed: 'Awaiting confirmation',
-  no_show: 'No-show',
+  confirmed: 'Confirmada',
+  unconfirmed: 'Sin confirmar',
+  no_show: 'Inasistencia',
 };
 
-const clockFormat = new Intl.DateTimeFormat('en-US', {
+const clockFormat = new Intl.DateTimeFormat('es-CR', {
   timeZone: 'America/Costa_Rica',
   hour: 'numeric',
   minute: '2-digit',
@@ -37,16 +38,16 @@ export function PatientThread({
     .sort((a, b) => a.at.localeCompare(b.at));
 
   return (
-    <section className="patient-panel" aria-label="Simulated patient channel">
+    <section className={styles.panel} aria-label="Canal simulado del paciente">
       <header className="patient-panel-head">
         <div>
-          <span className="eyebrow">SIMULATED CHANNEL</span>
-          <h2>Patient messages</h2>
+          <span className="eyebrow">CANAL SIMULADO</span>
+          <h2>Mensajes del paciente</h2>
         </div>
-        <p>Spanish messages inside this demo. No WhatsApp API.</p>
+        <p>Mensajes ficticios dentro de esta demo. No se envía WhatsApp.</p>
       </header>
       {people.length ? (
-        <div className="patient-switch" role="group" aria-label="Choose a patient">
+        <div className="patient-switch" role="group" aria-label="Elegí un paciente">
           {people.map((appointment) => (
             <button
               key={appointment.id}
@@ -67,7 +68,7 @@ export function PatientThread({
           <div>
             <strong>{active.patient.replace(' (demo)', '')}</strong>
             <span className={`attend attend-${active.attendance}`}>
-              {attendanceLabel[active.attendance]}
+              {active.attendance ? attendanceLabel[active.attendance] : 'Sin estado de asistencia'}
             </span>
           </div>
         </div>
@@ -81,8 +82,8 @@ export function PatientThread({
             </article>
           ))
         ) : (
-          <p className="thread-empty" lang="en">
-            No messages with this patient yet. A confirmed follow-up appears here in Spanish.
+          <p className="thread-empty" lang="es">
+            Todavía no hay mensajes con este paciente. Un seguimiento confirmado aparece aquí.
           </p>
         )}
       </div>

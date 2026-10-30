@@ -26,9 +26,6 @@
   font-size: 11px;
   letter-spacing: 1px;
 }
-.onDark > span {
-  color: #e7f7f8;
-}
 .header > .icon {
   width: 25px;
   height: 25px;

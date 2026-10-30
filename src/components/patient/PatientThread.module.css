@@ -1,0 +1,31 @@
+.panel {
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+.panel h2 {
+  margin: 8px 0;
+  font-size: 20px;
+}
+.panel button {
+  margin: 4px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--content);
+  background: var(--surface);
+}
+.panel button[aria-pressed='true'] {
+  border-color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+.panel article {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-alt);
+}
+.panel time {
+  color: var(--secondary);
+  font-size: 12px;
+}
