@@ -4,10 +4,13 @@
 --   1. supabase/seeds/demo-secretaria.sql (this file: tenant, branch, catalog, hours, sources, appointments)
 --   2. supabase/seeds/grant-membership.sql (membership for the real Auth test user)
 -- No users, passwords, emails, patients or clinical records are created here. All labels are fictitious.
--- Appointments use relative times so they stay in the future whenever the seed runs.
--- Rerunning this file duplicates rows: it is meant to run once per demo tenant. Use a fresh
--- tenant slug per reset instead of reapplying.
+-- One atomic statement: any error rolls back the entire seed.
+-- Appointments use future opening days in the branch time zone.
+-- Apply once to the empty demo namespace. Unique IDs/slug reject reruns atomically.
+-- Any reset needs its own reviewed procedure; changing only the slug does not reset the IDs.
 
+do $demo_seed$
+begin
 -- Tenant + branch ---------------------------------------------------------
 insert into public.dc_tenants(id, slug, name) values
   ('90000000-0000-4000-8000-000000000001', 'brisa-demo', 'Clínica Brisa Demo');
@@ -53,22 +56,29 @@ insert into public.dc_sources(id, tenant_id, branch_id, source_key, title, conte
     'booking', 'Reservas, cancelaciones y cambios',
     'Para reservar se necesita nombre ficticio del paciente, servicio, profesional, fecha y hora. Consultar disponibilidad real antes de proponer. Cancelar y reagendar requieren identificar la cita sin ambigüedad. Toda escritura requiere confirmar la tarjeta. Una propuesta no reserva el espacio. Su vigencia es de 10 minutos; al confirmar se verifica otra vez la disponibilidad.');
 
--- Appointments: tomorrow and the day after, always in the future ------------
-insert into public.dc_demo_appointments(tenant_id, branch_id, professional_id, service_id, patient_label, starts_at, duration_minutes, status)
+-- Morning appointments may use Saturday; the afternoon appointment needs a weekday.
+with days as (
+  select (now() at time zone 'America/Costa_Rica')::date + day_offset as day
+  from generate_series(1, 9) day_offset
+), opening as (
+  select min(day) filter (where extract(isodow from day) between 1 and 6) as morning,
+    min(day) filter (where extract(isodow from day) between 1 and 5
+      and day >= (now() at time zone 'America/Costa_Rica')::date + 2) as afternoon
+  from days
+), bookings(professional_id, service_id, patient_label, at_time, duration_minutes, later) as (
+  values
+    ('92000000-0000-4000-8000-000000000001'::uuid, '93000000-0000-4000-8000-000000000002'::uuid, 'Ana Mora (demo)', time '09:00', 60, false),
+    ('92000000-0000-4000-8000-000000000002'::uuid, '93000000-0000-4000-8000-000000000001'::uuid, 'Luis Solís (demo)', time '10:30', 30, false),
+    ('92000000-0000-4000-8000-000000000001'::uuid, '93000000-0000-4000-8000-000000000001'::uuid, 'Sofía Rojas (demo)', time '14:00', 30, true)
+), scheduled as (
+  select b.*, ((case when later then o.afternoon else o.morning end) + b.at_time)
+    at time zone 'America/Costa_Rica' as starts_at
+  from bookings b cross join opening o
+)
+insert into public.dc_demo_appointments(tenant_id, branch_id, professional_id, service_id, patient_label, starts_at, ends_at, duration_minutes, status)
   select '90000000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000001',
-    '92000000-0000-4000-8000-000000000001', '93000000-0000-4000-8000-000000000002',
-    'Ana Mora (demo)',
-    ((date_trunc('day', now() at time zone 'America/Costa_Rica') + interval '1 day 09:00') at time zone 'America/Costa_Rica'),
-    60, 'scheduled'
-  union all
-  select '90000000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000001',
-    '92000000-0000-4000-8000-000000000002', '93000000-0000-4000-8000-000000000001',
-    'Luis Solís (demo)',
-    ((date_trunc('day', now() at time zone 'America/Costa_Rica') + interval '1 day 10:30') at time zone 'America/Costa_Rica'),
-    30, 'scheduled'
-  union all
-  select '90000000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000001',
-    '92000000-0000-4000-8000-000000000001', '93000000-0000-4000-8000-000000000001',
-    'Sofía Rojas (demo)',
-    ((date_trunc('day', now() at time zone 'America/Costa_Rica') + interval '2 days 14:00') at time zone 'America/Costa_Rica'),
-    30, 'scheduled';
+    professional_id, service_id, patient_label, starts_at,
+    starts_at + make_interval(mins => duration_minutes), duration_minutes, 'scheduled'
+  from scheduled;
+end
+$demo_seed$;

@@ -130,14 +130,39 @@ try {
         (await file('supabase/tests/bootstrap.sql')) +
         '\n' +
         parts.join('\n') +
-        '\n' +
-        (await file('supabase/tests/fixtures.sql')) +
         '\ncommit;',
     ),
     'versioned schema',
   );
   console.log(
     'PostgreSQL migrations applied to isolated local database (' + names.length + ' SQL files).',
+  );
+  const demoSeed = await file('supabase/seeds/demo-secretaria.sql');
+  const demoMembership = (await file('supabase/seeds/grant-membership.sql')).replaceAll(
+    '<AUTH_USER_UUID>',
+    '00000000-0000-4000-8000-000000000001',
+  );
+  const seeded = requireSuccess(
+    await sql(
+      "begin;\ninsert into auth.users(id) values ('00000000-0000-4000-8000-000000000001');\n" +
+        demoSeed +
+        '\n' +
+        demoMembership +
+        '\n' +
+        (await file('supabase/tests/demo-seed.sql')) +
+        '\nrollback;',
+    ),
+    'controlled demo seed',
+  );
+  console.log(
+    seeded
+      .split('\n')
+      .filter((line) => line.endsWith('_ok'))
+      .join('\n'),
+  );
+  requireSuccess(
+    await sql('begin;\n' + (await file('supabase/tests/fixtures.sql')) + '\ncommit;'),
+    'isolated invariant fixtures',
   );
   for (const name of ['invariants.sql', 'decisions.sql']) {
     const output = requireSuccess(await sql(await file('supabase/tests/' + name)), name);
