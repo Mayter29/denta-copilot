@@ -9,7 +9,7 @@
 - API: `https://lyphdzeazqnaepyzzisi.supabase.co`.
 - [Configuración del proyecto](https://supabase.com/dashboard/project/lyphdzeazqnaepyzzisi/settings/general).
 
-Se verificó la identidad en la sesión de Chrome de la participante el 27 de octubre de 2026. Se configuró únicamente la clave **publicable** de este proyecto en `.env.local`. No se reveló ni copió la clave secreta. El conector MCP disponible no tiene permiso sobre este proyecto; se usó el dashboard para obtener su configuración.
+Se verificó la identidad en la sesión de Chrome de la participante el 27 de octubre de 2026. Se configuró únicamente la clave **publicable** de este proyecto en `.env.local`. No se reveló ni copió la clave secreta. El 29 de octubre se verificó además el MCP `denta-supabase`, restringido a esta referencia y en solo lectura; el conector anterior sigue sin permisos. El estado del esquema y la migración están en [DATABASE.md](DATABASE.md).
 
 ## Configuración y protección de destino
 
@@ -31,6 +31,6 @@ Conectividad y configuración listas. Esto no equivale a login de usuarios, cons
 
 La agenda y el chat siguen en `work/sessions`. No se crearon tablas, usuarios, políticas, buckets ni registros remotos. No se ejecutaron migraciones. Las pruebas de configuración impiden seleccionar accidentalmente otro proyecto, pero no sustituyen pruebas de autorización y RLS.
 
-Existe una [propuesta ejecutable de base de datos](DATABASE.md), validada en PostgreSQL local: esquema propio, RLS, restricciones de agenda y confirmación transaccional. Aún no es una migración remota ni está conectada a la aplicación. Incluye el recorrido de activación pendiente con Auth y pruebas reales de sesión. Se implementará exclusivamente en esta referencia, con datos ficticios. Nunca copiar conexiones o datos de Dentary/ECP.
+Existe una [migración inicial versionada](DATABASE.md), validada en PostgreSQL local: esquema propio, RLS, restricciones de agenda y confirmación transaccional. Aún no está aplicada remotamente ni conectada a la aplicación. Incluye el recorrido de activación pendiente con Auth y pruebas reales de sesión. Se implementará exclusivamente en esta referencia, con datos ficticios. Nunca copiar conexiones o datos de Dentary/ECP.
 
 Referencias: [inicialización del SDK](https://supabase.com/docs/reference/javascript/initializing) y [tipos de claves](https://supabase.com/docs/guides/getting-started/api-keys).

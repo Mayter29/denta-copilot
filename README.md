@@ -35,7 +35,7 @@ El chat espera la respuesta completa; todavía no transmite tokens progresivamen
 
 Supabase está fijado a `lyphdzeazqnaepyzzisi` para impedir conexiones accidentales a otros proyectos. Verificar con `pnpm supabase:check`. Ver [configuración y alcance](docs/SUPABASE.md).
 
-La [base de datos propuesta](docs/DATABASE.md) separa el núcleo del copiloto de la agenda ficticia para facilitar una futura integración autorizada con Dentary. Se prueba con `pnpm db:check` (requiere Docker); todavía no está aplicada en Supabase ni conectada a la app.
+La [migración inicial de base de datos](docs/DATABASE.md) separa el núcleo del copiloto de la agenda ficticia para facilitar una futura integración autorizada con Dentary. Se prueba con `pnpm db:check` (requiere Docker); todavía no está aplicada en Supabase ni conectada a la app.
 
 ## Prueba rápida
 

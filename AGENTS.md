@@ -30,7 +30,7 @@
 - React Doctor complementa ESLint, tipos, pruebas y navegador. Verificar cada hallazgo en el código; corregir regresiones y problemas relevantes del alcance. No perseguir 100 puntos, ocultar reglas ni iniciar refactors masivos para limpiar avisos. Deuda previa y falsos positivos se documentan con evidencia y siguiente paso; un fallo real de seguridad o integridad del cambio se resuelve antes de publicarlo.
 - Tests para comportamiento e invariantes: conflictos, versión, idempotencia, aislamiento y confirmación humana. No agregar tests que solo reproduzcan la implementación o congelen estilos/copys por rutina. Si cambia la frontera del agente, ejecutar `pnpm eval:offline`; `pnpm eval:live` es separado, con presupuesto explícito en `docs/EVALUACIONES.md`.
 - Documentación/skills sin cambios ejecutables: enlaces, comandos, formato y validación de la skill; no repetir build o llamadas a Meta sin motivo. Comprobar el resultado real y reportar verificaciones omitidas o bloqueadas.
-- Al cambiar la propuesta SQL o su harness: ejecutar `pnpm db:check` con Docker. Es una prueba PostgreSQL local con datos ficticios, no una validación de Auth/JWT/PostgREST reales ni una migración remota. Ver `docs/DATABASE.md`; no aplicar los archivos de `supabase/proposals` individualmente al proyecto alojado.
+- Al cambiar las migraciones SQL o su harness: ejecutar `pnpm db:check` con Docker. Es una prueba PostgreSQL local con datos ficticios, no una validación de Auth/JWT/PostgREST reales ni un despliegue remoto. Ver `docs/DATABASE.md`; mantener la migración inicial atómica y aplicar únicamente a `lyphdzeazqnaepyzzisi`.
 
 ### Repositorio público
 

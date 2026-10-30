@@ -119,10 +119,11 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   if (!ready) throw new Error('Local database did not become ready');
-  const names = (await readdir(path.join(root, 'supabase/proposals')))
-    .filter((name) => /^\d{3}_.+\.sql$/.test(name))
+  const names = (await readdir(path.join(root, 'supabase/migrations')))
+    .filter((name) => /^\d{14}_.+\.sql$/.test(name))
     .sort();
-  const parts = await Promise.all(names.map((name) => file('supabase/proposals/' + name)));
+  if (names.length === 0) throw new Error('No versioned database migrations found');
+  const parts = await Promise.all(names.map((name) => file('supabase/migrations/' + name)));
   requireSuccess(
     await sql(
       'begin;\n' +
@@ -133,10 +134,10 @@ try {
         (await file('supabase/tests/fixtures.sql')) +
         '\ncommit;',
     ),
-    'candidate schema',
+    'versioned schema',
   );
   console.log(
-    'PostgreSQL candidate applied to isolated local database (' + names.length + ' SQL files).',
+    'PostgreSQL migrations applied to isolated local database (' + names.length + ' SQL files).',
   );
   for (const name of ['invariants.sql', 'decisions.sql']) {
     const output = requireSuccess(await sql(await file('supabase/tests/' + name)), name);

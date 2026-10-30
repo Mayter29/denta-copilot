@@ -2,7 +2,9 @@
 
 ## Estado y objetivo
 
-Diseño ejecutable y probado en PostgreSQL local, con datos inventados. Los siete archivos de `supabase/proposals` son una **propuesta**, no migraciones aplicadas. El 29 de octubre de 2026 el conector no permitió consultar el proyecto exclusivo `lyphdzeazqnaepyzzisi`; no se inspeccionó su esquema ni se ejecutó DDL remoto. La aplicación continúa usando `work/sessions`.
+Migración inicial versionada en `supabase/migrations/20261030052216_initial_copilot_storage.sql`, creada con Supabase CLI 2.122.0 y probada en PostgreSQL local con datos inventados. Consolida los siete archivos de diseño originales en una sola unidad; estos se retiraron para mantener una única fuente SQL. Todavía no está aplicada remotamente. La aplicación continúa usando `work/sessions`.
+
+El 29 de octubre de 2026 se verificó el nuevo MCP `denta-supabase`: URL restringida al proyecto `lyphdzeazqnaepyzzisi`, consultas con `supabase_read_only_user` y `transaction_read_only=on`. El proyecto usa PostgreSQL 17.11, no tiene tablas en `public` ni migraciones registradas. Existen los esquemas `public` y `extensions`; `pgcrypto` está instalado en `extensions`. La migración instala `btree_gist`, aún ausente, y crea `copilot_private`. El conector anterior sigue sin permiso sobre este proyecto; no debe usarse otro proyecto como alternativa.
 
 El objetivo es conservar conversaciones, propuestas y comprobantes útiles para una futura integración con Dentary, dejando la agenda ficticia como adaptador reemplazable. Esto no certifica compatibilidad con el esquema ni con las APIs actuales de Dentary: no se consultaron sus datos ni se copió código corporativo.
 
@@ -86,7 +88,7 @@ Se reutilizan conceptos, contratos e invariantes de prueba. No se propone copiar
 pnpm db:check
 ```
 
-Requiere Docker en ejecución y acceso a la imagen oficial de PostgreSQL fijada por digest en `scripts/check-database.mjs` (17.11 al preparar este diseño). Crea un contenedor único y efímero sin red ni puertos publicados, con almacenamiento temporal en memoria. Aplica los siete SQL en orden dentro de una transacción, carga exclusivamente fixtures ficticios y elimina su propio contenedor al terminar. No lee `.env.local`, no usa Supabase ni necesita claves. La autenticación local `trust` existe solo dentro de ese contenedor sin red.
+Requiere Docker en ejecución y acceso a la imagen oficial de PostgreSQL fijada por digest en `scripts/check-database.mjs` (17.11 al preparar este diseño). Crea un contenedor único y efímero sin red ni puertos publicados, con almacenamiento temporal en memoria. Aplica las migraciones versionadas en orden dentro de una transacción, carga exclusivamente fixtures ficticios y elimina su propio contenedor al terminar. No lee `.env.local`, no usa Supabase ni necesita claves. La autenticación local `trust` existe solo dentro de ese contenedor sin red.
 
 Cobertura:
 
@@ -102,12 +104,18 @@ La prueba usa un sustituto mínimo de `auth.users` y `auth.uid()` para simular r
 ## Antes de activar persistencia remota
 
 1. Revisar el esquema real, versión PostgreSQL, extensión `btree_gist`, propietario de funciones, roles y esquemas expuestos del proyecto exclusivo. No reemplazarlo por otro proyecto si falta acceso.
-2. Convertir la propuesta revisada en migración versionada mediante Supabase CLI. Los archivos de propuesta se aplican juntos; no exponer estados intermedios sin las revocaciones de `007_rpc.sql`. No aplicar el bootstrap ni fixtures de pruebas al proyecto remoto.
+2. Aplicar la migración inicial completa mediante una conexión de escritura restringida al proyecto elegido. No separar tablas, políticas y revocaciones en despliegues intermedios. No aplicar el bootstrap ni fixtures de pruebas al proyecto remoto. Antes y después comprobar el historial de migraciones y conservar en Git la versión realmente registrada; no volver a ejecutar el SQL para corregir solamente el nombre/versionado del archivo.
 3. Integrar Auth y sesión de servidor; emitir tipos del esquema y crear el adaptador de persistencia con contratos validados. Decidir explícitamente cómo importar o descartar sesiones ficticias locales; no hacer fallback silencioso a archivos cuando falle una escritura remota.
 4. Probar el flujo completo con usuarios ficticios y JWT reales de dos organizaciones/sedes: navegador → endpoint → RPC → RLS → resultado. Comprobar que el modelo sigue sin capacidad de confirmar.
 5. Probar recuperación tras caída del proceso y turnos abandonados. Los estados están modelados, pero no existe todavía un worker que los recupere.
 6. Definir retención aprobada y borrado. Hay un límite provisional de conversación de 30 días, sin job de purga; las tablas inmutables requieren un procedimiento de retención deliberado. No interpretar esto como una política legal.
 
 La fuente guarda versiones y huellas de contenido con índice léxico español; falta implementar selección de versión vigente y recuperación desde la app. No se incorporan embeddings ni otro servicio por anticipado.
+
+## Acceso para aplicar la migración
+
+Conservar `denta-supabase` como conexión de inspección en solo lectura. Una conexión de mantenimiento separada debe llevar `project_ref=lyphdzeazqnaepyzzisi&features=database`, autenticarse únicamente en `dentacopilot` y mantener las confirmaciones predeterminadas. No se necesita acceso a herramientas de cuenta, otros proyectos ni claves de Dentary/ECP. La autorización OAuth del participante sigue siendo necesaria para habilitar esa conexión; preparar un archivo SQL no la concede.
+
+Una vez aplicada: comprobar 20 tablas con RLS habilitado y forzado, ACL de las RPC, esquema privado no expuesto y advisors de seguridad si están disponibles. La creación de tablas por sí sola no habilita la app: Auth, membresías ficticias y las pruebas con JWT reales continúan como un corte separado.
 
 Referencias: [RLS de Supabase](https://supabase.com/docs/guides/database/postgres/row-level-security), [funciones y privilegios](https://supabase.com/docs/guides/database/functions) y [rangos y exclusión de PostgreSQL](https://www.postgresql.org/docs/current/rangetypes.html).
