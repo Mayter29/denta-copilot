@@ -1024,6 +1024,169 @@ a {
   color: var(--success);
   background: #e3f4e9;
 }
+.verified-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.verified-line svg {
+  color: var(--success);
+  flex-shrink: 0;
+}
+.time-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.time-chips button {
+  border: 1px solid #bddce3;
+  background: #fff;
+  color: var(--accent-strong);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.time-chips button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.briefing {
+  margin-top: 22px;
+}
+.briefing-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent-strong);
+  margin: 0 0 10px;
+}
+.briefing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.briefing-card {
+  border: 1px solid #bddce3;
+  background: #f7fcfd;
+  border-radius: 12px;
+  padding: 13px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.briefing-card > svg {
+  color: var(--accent-strong);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.briefing-card strong {
+  font-size: 12px;
+  display: block;
+}
+.briefing-card p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 4px 0 8px;
+  line-height: 1.5;
+}
+.briefing-action {
+  border: 0;
+  background: none;
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  cursor: pointer;
+}
+.briefing-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.batch-rows {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.batch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #d5e7ec;
+  border-radius: 9px;
+  padding: 9px 11px;
+  background: #fff;
+  font-size: 11px;
+}
+.batch-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.batch-row span {
+  color: var(--muted);
+}
+.batch-row-buttons {
+  display: flex;
+  gap: 6px;
+}
+.batch-row-buttons .primary,
+.batch-row-buttons .secondary {
+  padding: 7px 9px;
+}
+.batch-row.confirmed {
+  border-color: #b4d9c6;
+  background: #f5fbf7;
+}
+.patient-reply {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.patient-reply button {
+  border: 1px solid #bddce3;
+  background: #fff;
+  color: var(--accent-strong);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.patient-reply button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.live-partial {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  margin: 0 0 8px;
+  border-left: 2px solid #bddce3;
+  padding-left: 8px;
+}
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1396,6 +1559,9 @@ a {
   }
   .proposal-buttons {
     flex-wrap: wrap;
+  }
+  .briefing-grid {
+    grid-template-columns: 1fr;
   }
 }
 @media (prefers-reduced-motion: reduce) {

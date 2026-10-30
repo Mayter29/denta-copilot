@@ -4,6 +4,8 @@ type Callbacks = {
   onProgress: (seconds: number, level: number) => void;
   onLimit: () => void;
   onInterrupted: () => void;
+  /** Live streaming tap: every worklet chunk before buffering. Never persisted here. */
+  onSamples?: (samples: Float32Array) => void;
 };
 export function microphoneError(error: unknown) {
   const name = error instanceof Error ? error.name : '';
@@ -31,6 +33,11 @@ export class MicrophoneCapture {
   private rejectFinish?: (error: Error) => void;
 
   constructor(private callbacks: Callbacks) {}
+
+  /** Device rate of the running context. Live PCM streaming requires 16 kHz. */
+  get inputRate() {
+    return this.context?.sampleRate ?? 0;
+  }
 
   async start() {
     if (
@@ -97,6 +104,7 @@ export class MicrophoneCapture {
           return;
         }
         if (data.type !== 'samples' || !(data.samples instanceof Float32Array)) return;
+        this.callbacks.onSamples?.(data.samples);
         const room = Math.max(
           0,
           Math.floor(context.sampleRate * DICTATION_MAX_SECONDS) - this.frames,

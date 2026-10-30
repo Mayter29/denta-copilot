@@ -23,9 +23,13 @@ function clock(value: string) {
 export function PatientThread({
   messages,
   appointments,
+  onReply,
+  replyBusy,
 }: {
   messages: PatientMessage[];
   appointments: Appointment[];
+  onReply?: (appointmentId: string, reply: 'confirm' | 'reschedule' | 'cancel') => void;
+  replyBusy?: string | null;
 }) {
   const people = appointments.filter((appointment) => appointment.status === 'scheduled');
   const initial =
@@ -71,6 +75,32 @@ export function PatientThread({
               {active.attendance ? attendanceLabel[active.attendance] : 'Sin estado de asistencia'}
             </span>
           </div>
+        </div>
+      ) : null}
+      {onReply && active?.status === 'scheduled' ? (
+        <div className="patient-reply" role="group" aria-label="Responder como paciente simulado">
+          <span>Simular respuesta:</span>
+          <button
+            type="button"
+            disabled={replyBusy === active.id}
+            onClick={() => onReply(active.id, 'confirm')}
+          >
+            Confirmar
+          </button>
+          <button
+            type="button"
+            disabled={replyBusy === active.id}
+            onClick={() => onReply(active.id, 'reschedule')}
+          >
+            Reagendar
+          </button>
+          <button
+            type="button"
+            disabled={replyBusy === active.id}
+            onClick={() => onReply(active.id, 'cancel')}
+          >
+            Cancelar
+          </button>
         </div>
       ) : null}
       <div className="thread" lang="es">
