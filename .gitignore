@@ -12,3 +12,4 @@ work/
 .DS_Store
 playwright-report/
 test-results/
+supabase/.temp/

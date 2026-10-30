@@ -9,7 +9,7 @@
 - API: `https://lyphdzeazqnaepyzzisi.supabase.co`.
 - [Configuración del proyecto](https://supabase.com/dashboard/project/lyphdzeazqnaepyzzisi/settings/general).
 
-Se verificó la identidad en la sesión de Chrome de la participante el 27 de octubre de 2026. Se configuró únicamente la clave **publicable** de este proyecto en `.env.local`. No se reveló ni copió la clave secreta. El conector MCP disponible no tiene permiso sobre este proyecto; se usó el dashboard para obtener su configuración.
+Se verificó la identidad en la sesión de Chrome de la participante el 27 de octubre de 2026. Se configuró únicamente la clave **publicable** de este proyecto en `.env.local`. No se reveló ni copió la clave secreta. El 29 de octubre se verificó además el MCP `denta-supabase`, restringido a esta referencia y en solo lectura; el conector anterior sigue sin permisos. El estado del esquema y la migración están en [DATABASE.md](DATABASE.md).
 
 ## Configuración y protección de destino
 
@@ -27,10 +27,10 @@ La raíz de metadatos de PostgREST requiere una clave secreta en este proyecto. 
 
 ## Alcance de este avance
 
-Conectividad y configuración listas. Esto no equivale a login de usuarios, consultas de citas, persistencia de conversaciones ni aislamiento de filas.
+Conectividad configurada y migración inicial aplicada al proyecto exclusivo. Esto no equivale todavía a login de usuarios ni persistencia de la aplicación en Supabase.
 
-La agenda y el chat siguen en `work/sessions`. No se crearon tablas, usuarios, políticas, buckets ni registros remotos. No se ejecutaron migraciones. Las pruebas de configuración impiden seleccionar accidentalmente otro proyecto, pero no sustituyen pruebas de autorización y RLS.
+La agenda y el chat siguen en `work/sessions`. Ya existen las tablas, políticas y RPC del esquema inicial remoto; no se cargaron organizaciones, citas ni fixtures. Se creó una cuenta de prueba por el dashboard de Auth y se verificó ingreso con contraseña, identidad mediante `getUser` y cierre de esa sesión de prueba. Las credenciales están únicamente en `P:\denta-copilot\secrets`, ignorado por Git; no se guardaron tokens. La cuenta aún no tiene membresías ni acceso a una organización/sede de la demo. No se crearon buckets. Esta comprobación de Auth no sustituye las pruebas pendientes de autorización/RLS entre usuarios ni el login de la aplicación, todavía no implementado.
 
-Siguiente corte: esquema propio, Auth, RLS, restricciones de agenda y confirmación transaccional. Se implementará exclusivamente en esta referencia, con datos ficticios y migraciones versionadas. Nunca copiar conexiones o datos de Dentary/ECP.
+El [estado de la migración y su verificación remota](DATABASE.md) mantiene el detalle de versión, RLS, permisos y límites. Pendiente: integrar Auth y el adaptador de persistencia, crear datos ficticios controlados y probar sesiones reales de organizaciones/sedes diferentes. Nunca copiar conexiones o datos de Dentary/ECP.
 
 Referencias: [inicialización del SDK](https://supabase.com/docs/reference/javascript/initializing) y [tipos de claves](https://supabase.com/docs/guides/getting-started/api-keys).
