@@ -23,9 +23,15 @@ const SEED_ROWS: Record<string, unknown[]> = {
   dc_branches: [{ id: IDS.branch, time_zone: 'America/Costa_Rica', active: true }],
   dc_conversations: [{ id: IDS.conversation }],
   dc_demo_professionals: [{ id: IDS.professional, name: 'Dra. Demo', active: true }],
-  dc_demo_services: [{ id: IDS.service, name: 'Valoración', duration_minutes: 30, price_minor: 100, active: true }],
+  dc_demo_services: [
+    { id: IDS.service, name: 'Valoración', duration_minutes: 30, price_minor: 100, active: true },
+  ],
   dc_demo_offerings: [{ professional_id: IDS.professional, service_id: IDS.service, active: true }],
-  dc_demo_business_hours: [1, 2, 3, 4, 5].map((weekday) => ({ weekday, opens_at: '08:00', closes_at: '17:00' })),
+  dc_demo_business_hours: [1, 2, 3, 4, 5].map((weekday) => ({
+    weekday,
+    opens_at: '08:00',
+    closes_at: '17:00',
+  })),
   dc_demo_closures: [],
   dc_demo_appointments: [],
   dc_sources: [],
@@ -41,7 +47,16 @@ const fakeReader = {
         chain[op] = vi.fn(() => chain);
       }
       chain.then = (resolve: (v: unknown) => unknown) =>
-        Promise.resolve({ data: SEED_ROWS[table] ?? [], error: null }).then(resolve);
+        Promise.resolve({
+          data: (SEED_ROWS[table] ?? []).map((row) =>
+            Object.fromEntries(
+              columns
+                .split(',')
+                .map((column) => [column, (row as Record<string, unknown>)[column]]),
+            ),
+          ),
+          error: null,
+        }).then(resolve);
       return chain;
     },
   }),
@@ -52,23 +67,63 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 describe('turno conectado completo', () => {
   beforeEach(() => {
     calls.length = 0;
+    SEED_ROWS.dc_messages = [
+      {
+        id: '90000000-0000-4000-8000-000000000001',
+        conversation_id: IDS.conversation,
+        run_id: IDS.run,
+        role: 'user',
+        content: 'Mensaje ficticio actual',
+        result_kind: null,
+      },
+    ];
   });
   it('publica el turno con delta, tiempos y lecturas acotadas en orden', async () => {
     const events: string[] = [];
     const store = {
-      openConversation: vi.fn(async () => { events.push('open'); await sleep(40); return IDS.conversation; }),
-      beginRun: vi.fn(async () => { events.push('beginRun'); await sleep(40); return IDS.run; }),
-      proposeDemoAppointment: vi.fn(async () => { await sleep(40); return IDS.proposal; }),
+      openConversation: vi.fn(async () => {
+        events.push('open');
+        await sleep(40);
+        return IDS.conversation;
+      }),
+      beginRun: vi.fn(async () => {
+        events.push('beginRun');
+        await sleep(40);
+        return IDS.run;
+      }),
+      proposeDemoAppointment: vi.fn(async () => {
+        await sleep(40);
+        return IDS.proposal;
+      }),
       recordToolEvent: vi.fn(async () => {}),
       recordSource: vi.fn(async () => {}),
-      publishRun: vi.fn(async () => { await sleep(40); return { kind: 'proposal', text: 'Pendiente', execution: 'none' }; }),
+      publishRun: vi.fn(async () => {
+        await sleep(40);
+        return { kind: 'proposal', text: 'Pendiente', execution: 'none' };
+      }),
       abortRun: vi.fn(async () => {}),
     };
-    const makeModel = () => scriptedModel([
-      { toolName: 'findAvailability', input: { date: '2026-11-02', professionalId: IDS.professional, serviceId: IDS.service } },
-      { toolName: 'proposeBooking', input: { patient: 'Demo', professionalId: IDS.professional, serviceId: IDS.service, date: '2026-11-02', time: '11:00' } },
-      { toolName: 'submitResult', input: { kind: 'proposal', text: 'x', sourceIds: [], proposalIds: [IDS.proposal] } },
-    ]);
+    const makeModel = () =>
+      scriptedModel([
+        {
+          toolName: 'findAvailability',
+          input: { date: '2026-11-02', professionalId: IDS.professional, serviceId: IDS.service },
+        },
+        {
+          toolName: 'proposeBooking',
+          input: {
+            patient: 'Demo',
+            professionalId: IDS.professional,
+            serviceId: IDS.service,
+            date: '2026-11-02',
+            time: '11:00',
+          },
+        },
+        {
+          toolName: 'submitResult',
+          input: { kind: 'proposal', text: 'x', sourceIds: [], proposalIds: [IDS.proposal] },
+        },
+      ]);
     const phases: string[] = [];
     const result = await runConnectedTurn({
       accessToken: 'token',
@@ -93,4 +148,31 @@ describe('turno conectado completo', () => {
     expect(phases).toContain('model');
     expect(phases.at(-1)).toBe('publishing');
   }, 60000);
+  it.each(['failed', 'cancelled'] as const)(
+    'cierra el run como %s si falla la lectura antes de invocar al modelo',
+    async (status) => {
+      SEED_ROWS.dc_messages = [{ id: 'fila-inválida' }];
+      const store = {
+        openConversation: vi.fn(async () => IDS.conversation),
+        beginRun: vi.fn(async () => IDS.run),
+        abortRun: vi.fn(async () => {}),
+        publishRun: vi.fn(),
+      };
+      await expect(
+        runConnectedTurn({
+          accessToken: 'token',
+          actor: IDS.actor,
+          tenantId: IDS.tenant,
+          branchId: IDS.branch,
+          requestId: '80000000-0000-4000-8000-000000000001',
+          text: 'Hola',
+          store: store as never,
+          abortSignal: status === 'cancelled' ? AbortSignal.abort() : undefined,
+          userCancelled: () => status === 'cancelled',
+        }),
+      ).rejects.toThrow();
+      expect(store.abortRun).toHaveBeenCalledWith({ actor: IDS.actor, runId: IDS.run, status });
+      expect(store.publishRun).not.toHaveBeenCalled();
+    },
+  );
 });

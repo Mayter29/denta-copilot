@@ -230,7 +230,6 @@ export function CopilotArea() {
             {selection ? `${selection.tenantName} · ${selection.branchName}` : 'Sin sede'}
           </p>
         </div>
-        <span className="model-pill">Muse Spark</span>
       </div>
       <div className="conversation" aria-live="polite" aria-busy={busy}>
         {!messages.length && !pendingUser ? (

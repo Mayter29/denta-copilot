@@ -57,7 +57,8 @@ export function validSelection(
   contexts: OrgContext[],
   selection: { tenantId: string; branchId: string } | null,
 ): OrgContext | null {
-  if (!selection) return null;
+  // A sole authorized workspace needs no extra choice. Never guess among several.
+  if (!selection) return contexts.length === 1 ? contexts[0] : null;
   return (
     contexts.find((c) => c.tenantId === selection.tenantId && c.branchId === selection.branchId) ??
     null

@@ -40,7 +40,10 @@ export async function requireBranchAccess(
 }
 
 export async function readBranchTimeZone(client: ReaderClient, branchId: string) {
-  const { data, error } = await client.from('dc_branches').select('id,time_zone,active').eq('id', branchId);
+  const { data, error } = await client
+    .from('dc_branches')
+    .select('id,time_zone,active')
+    .eq('id', branchId);
   if (error) throw new Error('No se pudo leer la sede.');
   const parsed = z
     .array(z.object({ id: z.uuid(), time_zone: z.string(), active: z.boolean() }))
@@ -51,7 +54,10 @@ export async function readBranchTimeZone(client: ReaderClient, branchId: string)
 }
 
 async function verifyConversation(client: ReaderClient, conversationId: string) {
-  const { data, error } = await client.from('dc_conversations').select('id').eq('id', conversationId);
+  const { data, error } = await client
+    .from('dc_conversations')
+    .select('id')
+    .eq('id', conversationId);
   if (error) throw new Error('No se pudo verificar la conversación.');
   // RLS only returns conversations the user owns; anything else is denied.
   if (z.array(z.object({ id: z.uuid() })).parse(data ?? []).length === 0)
@@ -106,7 +112,11 @@ export async function runConnectedTurn(input: {
   const store = input.store ?? createCopilotStore();
   const conversationId = input.conversationId
     ? await verifyConversation(userClient, input.conversationId)
-    : await store.openConversation({ actor: input.actor, tenantId: input.tenantId, branchId: input.branchId });
+    : await store.openConversation({
+        actor: input.actor,
+        tenantId: input.tenantId,
+        branchId: input.branchId,
+      });
   // The run persists the current user message first; history reads exclude this run,
   // so the message can never be duplicated in the prompt.
   const runId = await store.beginRun({
@@ -119,30 +129,47 @@ export async function runConnectedTurn(input: {
   });
   timer.checkpoint('run');
   input.onProgress?.(phaseProgress('context'));
-  const reads = await readAgentContext(userClient, {
-    tenantId: input.tenantId,
-    branchId: input.branchId,
-    conversationId,
-    runId,
-    timeZone,
-    today: clinicToday(input.now),
-  });
-  timer.checkpoint('reads');
-  const outcome = await runSecretaryConnected({
-    model: input.model ?? providerModel(),
-    reads,
-    store,
-    actor: input.actor,
-    runId,
-    timeZone,
-    today: clinicToday(input.now),
-    text: input.text,
-    now: input.now,
-    abortSignal: input.abortSignal,
-    userCancelled: input.userCancelled,
-    onProgress: input.onProgress,
-    timer,
-  });
+  let outcome: Awaited<ReturnType<typeof runSecretaryConnected>>;
+  try {
+    const reads = await readAgentContext(userClient, {
+      tenantId: input.tenantId,
+      branchId: input.branchId,
+      conversationId,
+      runId,
+      timeZone,
+      today: clinicToday(input.now),
+    });
+    timer.checkpoint('reads');
+    outcome = await runSecretaryConnected({
+      model: input.model ?? providerModel(),
+      reads,
+      store,
+      actor: input.actor,
+      runId,
+      timeZone,
+      today: clinicToday(input.now),
+      text: input.text,
+      now: input.now,
+      abortSignal: input.abortSignal,
+      userCancelled: input.userCancelled,
+      onProgress: input.onProgress,
+      timer,
+    });
+  } catch (error) {
+    // Context/provider setup can fail before the agent owns run finalization.
+    // Close the persisted run so retries cannot leave an active turn stranded.
+    const status = input.abortSignal?.aborted
+      ? input.userCancelled?.()
+        ? 'cancelled'
+        : 'paused'
+      : 'failed';
+    try {
+      await store.abortRun({ actor: input.actor, runId, status });
+    } catch {
+      logTurn('chat-cleanup-failed', { runId });
+    }
+    throw error;
+  }
   const delta = await readRunDelta(userClient, {
     tenantId: input.tenantId,
     branchId: input.branchId,

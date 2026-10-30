@@ -14,7 +14,7 @@ export const CHAT_PROGRESS: Record<ChatProgressId, ChatProgress> = {
   availability: { id: 'availability', label: 'Buscando disponibilidad' },
   knowledge: { id: 'knowledge', label: 'Consultando información' },
   proposal: { id: 'proposal', label: 'Preparando propuesta' },
-  session: { id: 'session', label: 'Verificando sesión' },
+  session: { id: 'session', label: 'Preparando respuesta' },
   context: { id: 'context', label: 'Preparando contexto' },
   model: { id: 'model', label: 'Consultando' },
   publishing: { id: 'publishing', label: 'Publicando resultado' },

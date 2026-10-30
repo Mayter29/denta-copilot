@@ -251,7 +251,7 @@ export async function readAgentContext(
       (d) => z.array(appointmentRow).parse(d)),
     run(scope(client, 'dc_sources', 'id,title,content,content_hash', t, b), (d) => z.array(sourceRow).parse(d)),
     run(
-      scope(client, 'dc_messages', 'id,run_id,role,content,result_kind', t, b)
+      scope(client, 'dc_messages', 'id,conversation_id,run_id,role,content,result_kind', t, b)
         .eq('conversation_id', input.conversationId).order('sequence', { ascending: false }).limit(AGENT_HISTORY_LIMIT + 1),
       (d) => z.array(messageRow).parse(d)),
   ]);

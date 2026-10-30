@@ -253,7 +253,6 @@ export function DemoWorkspace() {
                 : 'Preparando conexión con Meta'}
             </p>
           </div>
-          <span className="model-pill">Muse Spark</span>
         </div>
         <div className="conversation" aria-live="polite" aria-busy={busy}>
           {!state?.messages.length && !pendingUser ? (
