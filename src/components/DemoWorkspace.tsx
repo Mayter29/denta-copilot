@@ -291,7 +291,11 @@ export function DemoWorkspace() {
               {state?.messages.map((message) => (
                 <article key={message.id} className={`message ${message.role}`}>
                   <div className="message-avatar">
-                    {message.role === 'assistant' ? <DentaMascot size={29} blink={false} /> : 'M'}
+                    {message.role === 'assistant' ? (
+                      <DentaMascot size={29} blink={false} interactive={false} paused />
+                    ) : (
+                      'M'
+                    )}
                   </div>
                   <div>
                     <span className="message-author">

@@ -1,6 +1,6 @@
 'use client';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { DentaMascot, type DentaMood } from './DentaMascot';
+import { useState } from 'react';
+import { DentaMascot, type DentaActivity, type DentaMood } from './DentaMascot';
 
 export type DentaPresence = 'reposo' | 'escucha' | 'transcribe' | 'consulta' | 'exito';
 const MOOD: Record<DentaPresence, DentaMood> = {
@@ -10,8 +10,15 @@ const MOOD: Record<DentaPresence, DentaMood> = {
   consulta: 'pensando',
   exito: 'feliz',
 };
+const ACTIVITY: Record<DentaPresence, DentaActivity> = {
+  reposo: 'idle',
+  escucha: 'listening',
+  transcribe: 'transcribing',
+  consulta: 'thinking',
+  exito: 'idle',
+};
 
-/** Avatar state coordinator: presence from real chat/dictation activity, ambient motion with offscreen pause. */
+/** Product adapter: chat/dictation presence -> rig mood/activity/level. No audio, model or agenda logic here. */
 export function DentaAvatar({
   busy,
   presence = 'reposo',
@@ -22,26 +29,12 @@ export function DentaAvatar({
   level?: number;
 }) {
   const [animated, setAnimated] = useState(true);
-  const [visible, setVisible] = useState(true);
-  const ref = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const node = ref.current;
-    if (!node || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), {
-      threshold: 0,
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-  const mood = busy && presence !== 'exito' ? 'pensando' : MOOD[presence];
-  const listening = presence === 'escucha' && !busy;
-  const style = { '--denta-level': listening ? Math.min(1, Math.max(0, level)).toFixed(2) : '0' } as CSSProperties;
+  const effective: DentaPresence = busy && presence !== 'exito' ? 'consulta' : presence;
+  const listening = effective === 'escucha';
   return (
     <button
-      ref={ref}
       type="button"
-      className={`copilot-avatar${listening ? ' is-listening' : ''}`}
-      style={style}
+      className="copilot-avatar"
       aria-label="Animación de Denta"
       aria-pressed={animated}
       title={animated ? 'Pausar animación de Denta' : 'Reanudar animación de Denta'}
@@ -49,9 +42,12 @@ export function DentaAvatar({
     >
       <DentaMascot
         size={48}
-        mood={mood}
-        animate={animated && visible}
-        blink={animated && visible && mood === 'neutral'}
+        mood={MOOD[effective]}
+        activity={ACTIVITY[effective]}
+        level={listening ? level : 0}
+        blink={effective === 'reposo'}
+        interactive={animated}
+        paused={!animated}
       />
     </button>
   );
