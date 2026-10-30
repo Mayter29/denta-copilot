@@ -28,6 +28,7 @@ type Props = {
   disabled: boolean;
   busy: boolean;
   onActivityChange: (active: boolean) => void;
+  onPresence?: (presence: { phase: DictationPhase; level: number }) => void;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
 };
 export function ChatComposer({
@@ -37,6 +38,7 @@ export function ChatComposer({
   disabled,
   busy,
   onActivityChange,
+  onPresence,
   textareaRef,
 }: Props) {
   const onTranscript = useCallback(
@@ -54,6 +56,20 @@ export function ChatComposer({
   const recording = dictation.phase === 'recording';
   const pending = ['requesting', 'stopping', 'transcribing'].includes(dictation.phase);
   const hadWork = useRef(false);
+  const lastLevel = useRef(0);
+  // Presence for Denta: phase transitions always; live level throttled to avoid render churn.
+  useEffect(() => {
+    if (!onPresence) return;
+    if (dictation.phase !== 'recording') {
+      lastLevel.current = 0;
+      onPresence({ phase: dictation.phase, level: 0 });
+      return;
+    }
+    if (Math.abs(dictation.level - lastLevel.current) >= 0.08) {
+      lastLevel.current = dictation.level;
+      onPresence({ phase: dictation.phase, level: dictation.level });
+    }
+  }, [dictation.phase, dictation.level, onPresence]);
   useEffect(() => {
     if (busy || active) hadWork.current = true;
     else if (hadWork.current) {

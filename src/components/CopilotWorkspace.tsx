@@ -26,6 +26,8 @@ import { ChatProgress } from './chat/ChatProgress';
 import { useChatRequest } from './chat/useChatRequest';
 import { AuthPanel } from './AuthPanel';
 import { useAuthSession } from './useAuthSession';
+import type { DentaPresence } from './brand/DentaAvatar';
+import type { DictationPhase } from './chat/useDictation';
 
 type View = Workspace & {
   today: string;
@@ -81,6 +83,11 @@ export function CopilotWorkspace() {
   const [audioActive, setAudioActive] = useState(false);
   const audioActiveRef = useRef(false);
   const { auth, selection, handleAuthChange } = useAuthSession();
+  const [dictation, setDictation] = useState<{ phase: DictationPhase; level: number }>({
+    phase: 'idle',
+    level: 0,
+  });
+  const [successTick, setSuccessTick] = useState(false);
   const connected = !!(
     auth?.authenticated &&
     auth.serviceWrites &&
@@ -123,6 +130,24 @@ export function CopilotWorkspace() {
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [state?.messages.length, state?.proposals.length, busy, chat.progress?.id]);
+  const confirmedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (confirmedTimer.current) clearTimeout(confirmedTimer.current);
+  }, []);
+  function celebrate() {
+    setSuccessTick(true);
+    if (confirmedTimer.current) clearTimeout(confirmedTimer.current);
+    confirmedTimer.current = setTimeout(() => setSuccessTick(false), 2500);
+  }
+  const presence: DentaPresence = successTick
+    ? 'exito'
+    : busy
+      ? 'consulta'
+      : dictation.phase === 'recording'
+        ? 'escucha'
+        : dictation.phase === 'transcribing' || dictation.phase === 'stopping'
+          ? 'transcribe'
+          : 'reposo';
   async function send() {
     if (!draft.trim() || busy || audioActiveRef.current || !state) return;
     setError('');
@@ -181,6 +206,7 @@ export function CopilotWorkspace() {
         setDate(updated.change.date);
         setTab('agenda');
         setContextOpen(true);
+        celebrate();
       }
     } catch (e) {
       setError((e as Error).message);
@@ -274,7 +300,7 @@ export function CopilotWorkspace() {
           </div>
         </header>
         <div className="chat-heading">
-          <DentaAvatar busy={busy} />
+          <DentaAvatar busy={busy} presence={presence} level={dictation.level} />
           <div>
             <h1>Denta, tu copiloto de recepción</h1>
             <p>
@@ -393,6 +419,7 @@ export function CopilotWorkspace() {
             disabled={busy || !state}
             busy={busy}
             onActivityChange={onAudioActivity}
+            onPresence={setDictation}
             textareaRef={textarea}
           />
         </div>

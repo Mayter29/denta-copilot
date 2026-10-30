@@ -348,6 +348,15 @@ a {
   height: 48px;
   flex-shrink: 0;
 }
+.copilot-avatar.is-listening {
+  transform: scale(calc(1 + var(--denta-level, 0) * 0.12));
+  transition: transform 120ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .copilot-avatar.is-listening {
+    transform: none;
+  }
+}
 .chat-heading h1 {
   font-size: 16px;
   letter-spacing: -0.35px;
