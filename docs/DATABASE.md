@@ -114,6 +114,19 @@ La prueba usa un sustituto mínimo de `auth.users` y `auth.uid()` para simular r
 
 La fuente guarda versiones y huellas de contenido con índice léxico español; falta implementar selección de versión vigente y recuperación desde la app. No se incorporan embeddings ni otro servicio por anticipado.
 
+## Activar la persistencia de la app (pendiente de clave administrativa)
+
+La configuración actual solo tiene la clave publicable; no hay clave administrativa local y no se inventa ninguna. Sin ella, la app conserva explícitamente la demo local y rechaza el modo conectado con 503, sin fallback silencioso.
+
+1. Obtener la clave secreta desde el dashboard del proyecto `lyphdzeazqnaepyzzisi` (Settings → API → Secret key). Nunca usar una clave de otro proyecto ni prefijarla con `NEXT_PUBLIC_`.
+2. Guardarla solo en `P:\denta-copilot\.env.local` como `SUPABASE_SERVICE_ROLE_KEY=<valor>`. El archivo está ignorado por Git. No imprimirla ni pegarla en el chat.
+3. Reiniciar `pnpm dev` para cargar el entorno.
+4. Aplicar `supabase/seeds/demo-secretaria.sql` desde el SQL editor (una vez por reset).
+5. Aplicar `supabase/seeds/grant-membership.sql` con el UUID real del usuario de prueba Auth.
+6. Verificar: ingresar en la app, elegir la sede, consultar disponibilidad, pedir reserva, confirmar con clic, comprobar el comprobante y recargar para confirmar persistencia.
+
+Verificado localmente en este corte: Auth con sesión firmada (15 pruebas), adaptador RPC con actor de sesión (5 pruebas), mapeo de vista conectada y husos horarios (4 pruebas), agente conectado con publicación verificada y aborto con descarte (3 pruebas), `pnpm db:check` con concurrencia real. Pendiente remoto: login E2E con la cuenta de prueba, recorrido completo contra Supabase y reintentos/idempotencia entre procesos.
+
 ## Acceso para aplicar la migración
 
 `denta-supabase` es la conexión de inspección en solo lectura. `denta-migrations` es la conexión de mantenimiento, autorizada por OAuth por la participante y restringida mediante `project_ref=lyphdzeazqnaepyzzisi&features=database`, con las confirmaciones predeterminadas. Se verificó su URL antes de aplicar la migración. No se usaron herramientas de cuenta, otros proyectos ni claves de Dentary/ECP.
