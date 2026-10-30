@@ -23,6 +23,8 @@ import { DentaAvatar } from './brand/DentaAvatar';
 import { ChatComposer } from './chat/ChatComposer';
 import { ChatProgress } from './chat/ChatProgress';
 import { useChatRequest } from './chat/useChatRequest';
+import { AuthPanel } from './AuthPanel';
+import { fetchSession, type AuthSessionState, type OrgSelection } from '@/lib/client/auth';
 
 type View = Workspace & { today: string; modelReady: boolean };
 const suggestions = [
@@ -71,6 +73,8 @@ export function CopilotWorkspace() {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [audioActive, setAudioActive] = useState(false);
   const audioActiveRef = useRef(false);
+  const [auth, setAuth] = useState<AuthSessionState | null>(null);
+  const [selection, setSelection] = useState<OrgSelection | null>(null);
   const onAudioActivity = useCallback((active: boolean) => {
     audioActiveRef.current = active;
     setAudioActive(active);
@@ -90,7 +94,39 @@ export function CopilotWorkspace() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
+    void fetchSession()
+      .then((next) => {
+        setAuth(next);
+        if (next.authenticated && next.contexts.length > 0) {
+          try {
+            const stored = JSON.parse(
+              window.localStorage.getItem('denta-org-selection') ?? 'null',
+            ) as OrgSelection | null;
+            const valid = next.contexts.find(
+              (c) => c.tenantId === stored?.tenantId && c.branchId === stored?.branchId,
+            );
+            setSelection(
+              valid
+                ? { tenantId: valid.tenantId, branchId: valid.branchId }
+                : { tenantId: next.contexts[0].tenantId, branchId: next.contexts[0].branchId },
+            );
+          } catch {
+            setSelection({ tenantId: next.contexts[0].tenantId, branchId: next.contexts[0].branchId });
+          }
+        }
+      })
+      .catch(() => setAuth({ authenticated: false }));
   }, [load]);
+  function handleAuthChange(next: AuthSessionState, nextSelection: OrgSelection | null) {
+    setAuth(next);
+    setSelection(nextSelection);
+    try {
+      if (nextSelection) window.localStorage.setItem('denta-org-selection', JSON.stringify(nextSelection));
+      else window.localStorage.removeItem('denta-org-selection');
+    } catch {
+      // Selection persistence is best-effort; the session cookie remains authoritative.
+    }
+  }
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [state?.messages.length, state?.proposals.length, busy, chat.progress?.id]);
@@ -179,11 +215,20 @@ export function CopilotWorkspace() {
               Meta Hackathon 2026 <ArrowUpRight size={13} />
             </span>
           </div>
+          <AuthPanel auth={auth} selection={selection} onAuthChange={handleAuthChange} />
           <div className="user-profile">
             <div className="user-avatar">M</div>
             <div>
               <strong>Mi espacio de prueba</strong>
-              <span>Sesión local · datos ficticios</span>
+              <span>
+                {auth?.authenticated
+                  ? (selection
+                      ? `${auth.contexts.find((c) => c.tenantId === selection.tenantId && c.branchId === selection.branchId)?.tenantName ?? 'Organización'} · ${
+                          auth.contexts.find((c) => c.tenantId === selection.tenantId && c.branchId === selection.branchId)?.branchName ?? 'Sede'
+                        }`
+                      : 'Sin sede asignada')
+                  : 'Sesión local · datos ficticios'}
+              </span>
             </div>
           </div>
         </div>
