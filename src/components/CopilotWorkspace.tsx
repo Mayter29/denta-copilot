@@ -15,8 +15,8 @@ import {
   Zap,
 } from 'lucide-react';
 import type { Workspace } from '@/lib/domain/types';
-import type { AgendaCatalog } from './AgendaPanel';
-import { AgendaPanel, LOCAL_CATALOG } from './AgendaPanel';
+import { LOCAL_CATALOG, type AgendaCatalog } from '@/lib/domain/catalog';
+import { AgendaPanel } from './AgendaPanel';
 import { ProposalCard } from './ProposalCard';
 import { DentaryBrand } from './brand/DentaryBrand';
 import { DentaMascot } from './brand/DentaMascot';

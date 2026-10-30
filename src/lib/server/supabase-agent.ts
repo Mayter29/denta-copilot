@@ -151,14 +151,11 @@ export function createConnectedSecretary(input: {
             .filter((s) => s.score > 0)
             .sort((a, b) => b.score - a.score)
             .slice(0, 3);
-          for (const { source } of scored) {
-            sources.set(source.id, source);
-            try {
-              await store.recordSource({ actor, runId, sourceId: source.id });
-            } catch {
-              // Trace recording must not block the turn; publish validates the cited set.
-            }
-          }
+          for (const { source } of scored) sources.set(source.id, source);
+          // Trace recording is best-effort and unordered; publish validates the cited set.
+          await Promise.allSettled(
+            scored.map(({ source }) => store.recordSource({ actor, runId, sourceId: source.id })),
+          );
           return scored.map(({ source }) => ({ id: source.id, title: source.title, content: source.content, version: source.version }));
         },
       }),

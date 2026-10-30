@@ -17,6 +17,7 @@ const sessionSchema = z.discriminatedUnion('authenticated', [
     userId: z.uuid(),
     contexts: z.array(contextSchema),
     serviceWrites: z.boolean(),
+    patient: z.object({ available: z.literal(false), reason: z.string() }),
   }),
 ]);
 export type AuthSessionState = z.infer<typeof sessionSchema>;
@@ -28,12 +29,12 @@ async function postJson(url: string, body: unknown) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const data: unknown = await response.json().catch(() => null);
   if (!response.ok) {
+    const data: unknown = await response.json().catch(() => null);
     const message = z.object({ error: z.string() }).safeParse(data);
     throw new Error(message.success ? message.data.error : 'No se pudo completar la solicitud.');
   }
-  return data;
+  return (await response.json().catch(() => null)) as unknown;
 }
 
 export async function login(email: string, password: string): Promise<{ userId: string }> {
@@ -48,12 +49,12 @@ export async function logout(): Promise<void> {
 
 export async function fetchSession(): Promise<AuthSessionState> {
   const response = await fetch('/api/auth/session', { cache: 'no-store' });
-  const data: unknown = await response.json().catch(() => null);
   if (!response.ok) {
+    const data: unknown = await response.json().catch(() => null);
     const message = z.object({ error: z.string() }).safeParse(data);
     throw new Error(message.success ? message.data.error : 'No se pudo leer la sesión.');
   }
-  const parsed = sessionSchema.safeParse(data);
+  const parsed = sessionSchema.safeParse(await response.json().catch(() => null));
   if (!parsed.success) throw new Error('Respuesta de sesión inválida.');
   return parsed.data;
 }

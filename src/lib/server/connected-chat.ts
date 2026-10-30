@@ -131,8 +131,11 @@ export async function runConnectedTurn(input: {
   store?: CopilotStore;
 }): Promise<ConnectedTurnResult> {
   const userClient = userSupabase(input.accessToken) as unknown as ReaderClient;
-  await requireBranchAccess(userClient, { tenantId: input.tenantId, branchId: input.branchId });
-  const timeZone = await readBranchTimeZone(userClient, input.branchId);
+  // Independent read-only checks run together; writes stay strictly ordered below.
+  const [, timeZone] = await Promise.all([
+    requireBranchAccess(userClient, { tenantId: input.tenantId, branchId: input.branchId }),
+    readBranchTimeZone(userClient, input.branchId),
+  ]);
   const store = input.store ?? createCopilotStore();
   const conversationId = input.conversationId
     ? await verifyConversation(userClient, input.conversationId)

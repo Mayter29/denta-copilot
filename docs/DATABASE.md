@@ -75,7 +75,7 @@ Los comprobantes y decisiones son inmutables para los roles de aplicación. Esto
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | Organización, sede y actor             | Resolver desde la sesión y las relaciones existentes del anfitrión. No crear un segundo sistema de permisos si el existente sirve.    |
 | Profesional, servicio y disponibilidad | Consultar servicios autorizados de Dentary; mantener sus identificadores y reglas como autoridad.                                     |
-| Persona de la cita                     | Exigir referencia a un paciente existente y autorizado. Nunca crear ni identificar pacientes automáticamente por una etiqueta/nombre. |
+| Persona de la cita                     | Exigir referencia a un paciente existente y autorizado. Nunca crear ni identificar pacientes automáticamente por una etiqueta/nombre. Estado Fase 4: bloqueado por diseño; `denyPatientAccess` falla cerrado y la UI comunica que las citas las gestiona recepción. Requiere tabla de pacientes y enlace verificado antes de cualquier recorrido propio. |
 | Comando propuesto                      | Adaptador versionado que traduce la intención al contrato del anfitrión y conserva referencia, versión y vencimiento.                 |
 | Confirmación                           | Ejecutar mediante el servicio transaccional del anfitrión, con autorización y revalidación al momento del clic.                       |
 | Comprobante                            | Conservar ID y versión del efecto devueltos por el anfitrión; mostrar éxito solamente cuando haya evidencia verificable.              |

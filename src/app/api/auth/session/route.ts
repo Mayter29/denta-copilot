@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { authSession, userSupabase, type CookieStore } from '@/lib/server/auth';
 import { composeOrgContext } from '@/lib/domain/org-context';
+import { patientAccessStatus } from '@/lib/domain/patient-access';
 import { isServiceWritesConfigured } from '@/lib/supabase/service';
 import { apiError, guardLocal } from '@/lib/server/workspace';
 import { z } from 'zod';
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
         tenants: tenantSchema.parse(tenants.data ?? []),
       }),
       serviceWrites: isServiceWritesConfigured(),
+      patient: patientAccessStatus(),
     });
   } catch (error) {
     return apiError(error);

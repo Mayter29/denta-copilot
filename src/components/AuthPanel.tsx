@@ -72,11 +72,14 @@ export function AuthPanel({ auth, selection, onAuthChange }: Props) {
           disabled={pending}
           onChange={(e) => setPassword(e.target.value)}
         />
-        {error ? <p role="alert" className="auth-error">{error}</p> : null}
-        <button type="submit" className="primary" disabled={pending || !email.trim() || !password}>
-          <LogIn size={15} />
-          {pending ? 'Verificando…' : 'Ingresar'}
-        </button>
+      {error ? <p role="alert" className="auth-error">{error}</p> : null}
+      <button type="submit" className="primary" disabled={pending || !email.trim() || !password}>
+        <LogIn size={15} />
+        {pending ? 'Verificando…' : 'Ingresar'}
+      </button>
+      <p className="muted small">
+        Acceso solo para secretaría. ¿Sos paciente? Tus citas las gestiona recepción.
+      </p>
       </form>
     );
   }

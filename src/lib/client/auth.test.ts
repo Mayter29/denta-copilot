@@ -24,7 +24,7 @@ describe('cliente de autenticación', () => {
       'fetch',
       vi.fn(async (url: string) =>
         String(url).endsWith('/session')
-          ? json({ authenticated: true, userId: '00000000-0000-4000-8000-000000000001', contexts: [], serviceWrites: false })
+          ? json({ authenticated: true, userId: '00000000-0000-4000-8000-000000000001', contexts: [], serviceWrites: false, patient: { available: false, reason: 'Sin vínculo verificado.' } })
           : json({ ok: true }),
       ),
     );
@@ -34,6 +34,7 @@ describe('cliente de autenticación', () => {
       userId: '00000000-0000-4000-8000-000000000001',
       contexts: [],
       serviceWrites: false,
+      patient: { available: false, reason: 'Sin vínculo verificado.' },
     });
     await logout();
   });
