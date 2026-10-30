@@ -685,9 +685,13 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   color: var(--accent-strong);
   font-size: 11px;
   padding: 18px 0;
+}
+.thinking button {
+  margin-left: 4px;
 }
 .spinner {
   animation: spin 1s linear infinite;

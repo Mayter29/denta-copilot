@@ -7,7 +7,6 @@ import {
   CheckCheck,
   ChevronDown,
   Layers2,
-  LoaderCircle,
   MessageSquare,
   PanelRightClose,
   PanelRightOpen,
@@ -22,6 +21,8 @@ import { DentaryBrand } from './brand/DentaryBrand';
 import { DentaMascot } from './brand/DentaMascot';
 import { DentaAvatar } from './brand/DentaAvatar';
 import { ChatComposer } from './chat/ChatComposer';
+import { ChatProgress } from './chat/ChatProgress';
+import { useChatRequest } from './chat/useChatRequest';
 
 type View = Workspace & { today: string; modelReady: boolean };
 const suggestions = [
@@ -60,13 +61,14 @@ export function CopilotWorkspace() {
   const [state, setState] = useState<View | null>(null);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [proposalBusy, setProposalBusy] = useState(false);
+  const chat = useChatRequest();
+  const busy = chat.busy || proposalBusy;
   const [date, setDate] = useState('');
   const [tab, setTab] = useState('agenda');
   const [contextOpen, setContextOpen] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
-  const inFlight = useRef(false);
   const [audioActive, setAudioActive] = useState(false);
   const audioActiveRef = useRef(false);
   const onAudioActivity = useCallback((active: boolean) => {
@@ -91,29 +93,25 @@ export function CopilotWorkspace() {
   }, [load]);
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [state?.messages.length, state?.proposals.length, busy]);
+  }, [state?.messages.length, state?.proposals.length, busy, chat.progress?.id]);
   async function send() {
-    if (!draft.trim() || inFlight.current || audioActiveRef.current || !state) return;
-    inFlight.current = true;
-    setBusy(true);
+    if (!draft.trim() || busy || audioActiveRef.current || !state) return;
     setError('');
+    chat.clearStatus();
     const text = draft.trim();
-    try {
-      const data = await fetchJson('/api/chat', { text });
-      setState((s) => (s ? { ...s, ...data } : s));
-      setDraft('');
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      inFlight.current = false;
-      setBusy(false);
+    const data = await chat.send(text);
+    // Stale or cancelled responses return null and must not touch the UI.
+    if (!data) {
       textarea.current?.focus();
+      return;
     }
+    setState((s) => (s ? { ...s, ...data } : s));
+    setDraft('');
+    textarea.current?.focus();
   }
   async function onDecide(id: string, approved: boolean) {
-    if (inFlight.current || audioActiveRef.current) return;
-    inFlight.current = true;
-    setBusy(true);
+    if (busy || audioActiveRef.current) return;
+    setProposalBusy(true);
     setError('');
     try {
       const data = await fetchJson('/api/proposals', { id, approved });
@@ -127,12 +125,11 @@ export function CopilotWorkspace() {
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      inFlight.current = false;
-      setBusy(false);
+      setProposalBusy(false);
     }
   }
   function choose(text: string) {
-    if (inFlight.current || audioActiveRef.current) return;
+    if (busy || audioActiveRef.current) return;
     setDraft(text);
     textarea.current?.focus();
   }
@@ -299,19 +296,20 @@ export function CopilotWorkspace() {
               ))}
             </div>
           )}
-          {busy ? (
-            <div className="thinking" role="status">
-              <LoaderCircle size={17} className="spinner" />
-              Consultando contexto y validando la agenda…
-            </div>
-          ) : null}
+          <ChatProgress busy={busy} progress={chat.progress} onCancel={chat.cancel} />
           <div ref={bottom} />
         </div>
         <div className="composer-area">
-          {error ? (
+          {error || chat.error ? (
             <div className="error-message" role="alert">
-              {error}
+              {error || chat.error}
               {!state ? <button onClick={() => void load()}>Reintentar conexión</button> : null}
+            </div>
+          ) : null}
+          {chat.cancelled && !chat.busy ? (
+            <div className="error-message" role="status">
+              Solicitud cancelada. No se aplicaron cambios.
+              <button onClick={chat.clearStatus}>Descartar aviso</button>
             </div>
           ) : null}
           <ChatComposer
