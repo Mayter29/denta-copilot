@@ -140,13 +140,13 @@ export async function runConnectedTurn(input: {
   const conversationId = input.conversationId
     ? await verifyConversation(userClient, input.conversationId)
     : await store.openConversation({ actor: input.actor, tenantId: input.tenantId, branchId: input.branchId });
-  const reads = await loadConnectedReads(userClient, {
+  const readsPromise = loadConnectedReads(userClient, {
     tenantId: input.tenantId,
     branchId: input.branchId,
     conversationId,
     timeZone,
   });
-  const runId = await store.beginRun({
+  const runPromise = store.beginRun({
     actor: input.actor,
     conversationId,
     requestId: input.requestId,
@@ -154,6 +154,8 @@ export async function runConnectedTurn(input: {
     model: process.env.META_MODEL ?? 'muse-spark-1.3',
     text: input.text,
   });
+  // Reads and run creation are independent; the agent needs both.
+  const [reads, runId] = await Promise.all([readsPromise, runPromise]);
   const outcome = await runSecretaryConnected({
     model: input.model ?? providerModel(),
     reads,

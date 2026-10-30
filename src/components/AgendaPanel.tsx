@@ -1,22 +1,6 @@
 import { CalendarDays, Clock3, ArrowUpRight, BookOpen, History } from 'lucide-react';
 import type { Workspace } from '@/lib/domain/types';
-import { doctors as localDoctors, services as localServices } from '@/lib/domain/types';
-import { knowledge as localKnowledge } from '@/lib/domain/knowledge';
-
-export type AgendaCatalog = {
-  doctors: { id: string; name: string }[];
-  services: { id: string; name: string }[];
-  knowledge: { id: string; title: string; content: string }[];
-  hoursNote: string;
-  timeZone: string;
-};
-export const LOCAL_CATALOG: AgendaCatalog = {
-  doctors: localDoctors,
-  services: localServices,
-  knowledge: localKnowledge,
-  hoursNote: 'Lun–vie 8:00–17:00 · Sáb 8:00–12:00',
-  timeZone: 'America/Costa_Rica',
-};
+import { LOCAL_CATALOG, type AgendaCatalog } from '@/lib/domain/catalog';
 export function AgendaPanel({
   state,
   date,

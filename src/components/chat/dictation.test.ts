@@ -9,7 +9,11 @@ const mic = vi.hoisted(() => ({
   start: vi.fn(),
   stop: vi.fn(),
   cancel: vi.fn(),
-  callbacks: null as null | { onLimit: () => void; onInterrupted: () => void },
+  callbacks: null as null | {
+    onProgress: (seconds: number, level: number) => void;
+    onLimit: () => void;
+    onInterrupted: () => void;
+  },
 }));
 const remote = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/client/microphone', () => ({
@@ -29,6 +33,7 @@ vi.mock('@/lib/client/transcription', async (original) => ({
 }));
 const onTranscript = vi.fn();
 const onActivityChange = vi.fn();
+const onPresence = vi.fn();
 const audio = new Blob(['synthetic-wav']);
 beforeEach(() => {
   vi.clearAllMocks();
@@ -42,7 +47,29 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
-const subject = () => renderHook(() => useDictation({ onTranscript, onActivityChange }));
+const subject = () => renderHook(() => useDictation({ onTranscript, onActivityChange, onPresence }));
+
+it('informa presencia a Denta en transiciones y nivel con límite', async () => {
+  const { result } = subject();
+  await act(async () => {
+    await result.current.start();
+  });
+  expect(onPresence).toHaveBeenCalledWith({ phase: 'recording', level: 0 });
+  await act(async () => {
+    mic.callbacks?.onProgress(5, 0.9);
+  });
+  expect(onPresence).toHaveBeenLastCalledWith({ phase: 'recording', level: 0.9 });
+  const calls = onPresence.mock.calls.length;
+  await act(async () => {
+    mic.callbacks?.onProgress(6, 0.92);
+  });
+  // Variación mínima bajo el umbral: no propaga para no saturar la UI.
+  expect(onPresence.mock.calls.length).toBe(calls);
+  await act(async () => {
+    await result.current.stop();
+  });
+  expect(onPresence).toHaveBeenLastCalledWith({ phase: 'idle', level: 0 });
+});
 
 it('graba, detiene y añade texto sin enviar chat; libera el bloqueo al terminar', async () => {
   const { result } = subject();
