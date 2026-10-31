@@ -6,6 +6,7 @@ import { useDictation, type DictationPhase } from './useDictation';
 import { DictationControls, DictationFeedback } from './DictationControls';
 import { useLiveDictation } from './useLiveDictation';
 import { LiveDictationControls, LiveDictationFeedback } from './LiveDictationControls';
+import { RecordingMeter } from './RecordingMeter';
 
 const labels: Record<DictationPhase, string> = {
   idle: 'Dictado a borrador · hasta 60 s',
@@ -73,7 +74,9 @@ export function ChatComposer({
   });
   const liveActive = live.phase === 'connecting' || live.phase === 'streaming';
   const active = dictation.phase !== 'idle' || liveActive;
-  const recording = dictation.phase === 'recording' || live.phase === 'streaming';
+  const streaming = live.phase === 'streaming';
+  const recording = dictation.phase === 'recording' || streaming;
+  const dictationIdle = dictation.phase === 'idle' && !liveActive;
   const pending =
     ['requesting', 'stopping', 'transcribing'].includes(dictation.phase) || live.phase === 'connecting';
   const hadWork = useRef(false);
@@ -100,9 +103,17 @@ export function ChatComposer({
         <label htmlFor="chat-draft" className="sr-only">
           Mensaje al copiloto
         </label>
+        {recording ? (
+          <RecordingMeter
+            levels={streaming ? live.levels : dictation.levels}
+            seconds={streaming ? live.seconds : dictation.seconds}
+            label={streaming ? 'Transcribiendo en vivo' : 'Grabando dictado'}
+          />
+        ) : null}
         <textarea
           ref={textareaRef}
           id="chat-draft"
+          hidden={recording}
           value={draft}
           maxLength={2000}
           disabled={disabled || active}
@@ -128,39 +139,29 @@ export function ChatComposer({
           </button>
         </div>
       </form>
-      <div className="dictation-status">
+      <div className={`dictation-status${dictationIdle ? ' idle' : ''}`}>
         <span role="status" aria-live="polite">
-          {liveActive ? 'Transcribiendo en vivo con Meta' : labels[dictation.phase]}
+          {liveActive ? 'Transcribiendo en vivo con Meta' : dictationIdle ? '' : labels[dictation.phase]}
         </span>
-        {recording ? (
-          <>
-            <span aria-hidden="true">
-              {' '}
-              · {String(live.phase === 'streaming' ? live.seconds : dictation.seconds).padStart(2, '0')} / 60 s
-            </span>
-            <meter
-              aria-label="Nivel del micrófono"
-              min={0}
-              max={1}
-              value={live.phase === 'streaming' ? live.level : dictation.level}
-            />
-          </>
-        ) : null}
       </div>
+      {dictationIdle ? null : (
+        <p className="dictation-caption">
+          {liveActive
+            ? 'El audio se transmite a Meta mientras grabás. El texto cae al borrador y no se envía solo.'
+            : (disclosures[dictation.phase] ??
+              'Al detener, o a los 60 s, se envía a Meta. Cancelá antes para no enviarlo.')}
+        </p>
+      )}
       <div className="composer-hint">
         <span>
           <Command size={12} /> Enter para enviar · Shift + Enter para nueva línea
         </span>
-        <span>{draft.length}/2000</span>
+        <span className="composer-disclaimer">
+          <ShieldCheck size={12} />
+          Solo datos ficticios · confirmás cada cambio
+        </span>
+        {draft.length > 1500 ? <span>{draft.length}/2000</span> : null}
       </div>
-      <p className="dictation-caption">
-        {disclosures[dictation.phase] ??
-          'Al detener, o a los 60 s, se envía a Meta. Cancelá antes para no enviarlo.'}
-      </p>
-      <p className="composer-disclaimer">
-        <ShieldCheck size={12} />
-        Solo datos ficticios. Revisá el texto antes de enviarlo y confirmá cada cambio.
-      </p>
     </>
   );
 }

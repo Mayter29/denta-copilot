@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { settleBars, waveBars } from '@/lib/client/wave';
 import { MicrophoneCapture, microphoneError } from '@/lib/client/microphone';
 import { transcribeWav } from '@/lib/client/transcription';
 
@@ -15,11 +16,14 @@ export function useDictation({ onTranscript, onActivityChange, onPresence }: Opt
     phase: 'idle' as DictationPhase,
     seconds: 0,
     level: 0,
+    /** Bars of the latest microphone chunk for the recording wave. Never synthesized. */
+    levels: [] as number[],
     error: '',
     transcript: '',
   });
   const phase = useRef<DictationPhase>('idle');
   const lastLevel = useRef(0);
+  const latestBars = useRef<number[]>([]);
   const capture = useRef<MicrophoneCapture | null>(null);
   const audio = useRef<Blob | null>(null);
   const request = useRef<AbortController | null>(null);
@@ -97,7 +101,8 @@ export function useDictation({ onTranscript, onActivityChange, onPresence }: Opt
     if (phase.current !== 'idle') return;
     const token = ++generation.current;
     transition('requesting');
-    setState((previous) => ({ ...previous, seconds: 0, level: 0 }));
+    latestBars.current = [];
+    setState((previous) => ({ ...previous, seconds: 0, level: 0, levels: [] }));
     const current = new MicrophoneCapture({
       onProgress: (seconds, level) => {
         if (generation.current !== token) return;
@@ -106,7 +111,10 @@ export function useDictation({ onTranscript, onActivityChange, onPresence }: Opt
           lastLevel.current = level;
           onPresence?.({ phase: 'recording', level });
         }
-        setState((previous) => ({ ...previous, seconds, level }));
+        setState((previous) => ({ ...previous, seconds, level, levels: latestBars.current }));
+      },
+      onSamples: (samples) => {
+        if (generation.current === token) latestBars.current = settleBars(latestBars.current, waveBars(samples));
       },
       onLimit: () => {
         void stop();
