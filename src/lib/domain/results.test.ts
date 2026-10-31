@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { decide, propose, seedWorkspace } from './agenda';
-import { executionReceipt, verifyResult } from './results';
+import { executionReceipt, proposalSummary, verifyResult } from './results';
 
 const now = new Date('2026-10-27T07:00:00-06:00');
 const change = {
@@ -21,7 +21,10 @@ describe('contrato verificable', () => {
       new Map(),
       new Set([proposal.id]),
     );
-    expect(result.text).toContain('Propuesta pendiente');
+    expect(result.text).not.toContain('Ya quedó agendada');
+    expect(result.text).toBe(
+      'Preparé esta propuesta: Reservar valoración para Persona demo con Dra. Valeria Soto, mié 28 oct a las 11:00.\n\nTodavía no cambió nada: confirmá en la tarjeta para aplicarlo.',
+    );
     expect(result.execution).toBe('none');
     expect(result.proposals[0].change).toEqual(change);
     expect(state.appointments).toHaveLength(3);
@@ -56,5 +59,14 @@ describe('contrato verificable', () => {
     expect(executionReceipt(state, p.id)?.appointment.status).toBe('scheduled');
     expect(executionReceipt(state, cancellation.id)?.appointment.status).toBe('cancelled');
     expect(state.audit).toHaveLength(2);
+  });
+  it('el resumen de reagendar y cancelar sale de los datos del servidor', () => {
+    const state = seedWorkspace('2026-10-27');
+    const move = propose(state, { ...change, action: 'reschedule', appointmentId: 'demo-ana', patient: 'x', serviceId: 'cleaning', time: '13:00' }, now);
+    const cancel = propose(state, { ...change, action: 'cancel', appointmentId: 'demo-luis' }, now);
+    const text = proposalSummary([move, cancel], state);
+    expect(text).toContain('Preparé 2 propuestas:');
+    expect(text).toContain('- Mover la limpieza dental de Ana Mora del mar 27 oct a las 09:00 al mié 28 oct a las 13:00 (Dra. Valeria Soto).');
+    expect(text).toContain('- Cancelar la valoración de Luis Solís del mar 27 oct a las 10:30 (Dr. Andrés Vega).');
   });
 });

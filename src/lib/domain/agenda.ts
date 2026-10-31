@@ -12,6 +12,8 @@ import {
   type Workspace,
 } from './types';
 
+import { foldText } from './knowledge';
+
 export class DomainError extends Error {}
 const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
 const attendances = new Set<Attendance>(['confirmed', 'unconfirmed', 'no_show']);
@@ -280,6 +282,33 @@ export function propose(state: Workspace, change: Change, now = new Date()): Pro
   };
   state.proposals.push(proposal);
   return proposal;
+}
+/**
+ * A correction replaces what it corrects: a newer pending proposal for the same visit, or a
+ * new booking for the same patient and service, discards older pending ones. Proposals in
+ * `keep` (the current turn) are never touched, so alternatives offered together survive.
+ */
+export function supersedePending(state: Workspace, proposal: Proposal, keep: ReadonlySet<string>) {
+  const c = proposal.change;
+  const replaced: string[] = [];
+  for (const p of state.proposals) {
+    if (p.status !== 'pending' || p.id === proposal.id || keep.has(p.id)) continue;
+    const sameVisit =
+      !!c.appointmentId &&
+      p.change.appointmentId === c.appointmentId &&
+      c.action !== 'follow_up' &&
+      p.change.action !== 'follow_up';
+    const sameBooking =
+      c.action === 'book' &&
+      p.change.action === 'book' &&
+      p.change.serviceId === c.serviceId &&
+      foldText(p.change.patient.trim()) === foldText(c.patient.trim());
+    if (sameVisit || sameBooking) {
+      p.status = 'rejected';
+      replaced.push(p.id);
+    }
+  }
+  return replaced;
 }
 export function decide(state: Workspace, id: string, approved: boolean, now = new Date()) {
   const proposal = state.proposals.find((p) => p.id === id);

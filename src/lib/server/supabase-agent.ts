@@ -10,6 +10,7 @@ import type { Appointment } from '../domain/types';
 import type { CopilotStore } from './copilot-store';
 import type { TurnTimer } from './timing';
 import { connectedAvailability, zonedTimeToUtc } from './connected-view';
+import { META_PROVIDER_OPTIONS } from './agent';
 
 export { connectedAvailability };
 
@@ -102,6 +103,7 @@ export function createConnectedSecretary(input: {
     // Muse Spark counts reasoning as output (~1.5k per step measured); 1800 cut ambiguous turns.
     maxOutputTokens: 4000,
     maxRetries: 1,
+    providerOptions: META_PROVIDER_OPTIONS,
     instructions: connectedInstructions(reads, timeZone, today),
     tools: {
       submitResult: tool({

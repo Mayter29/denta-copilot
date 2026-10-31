@@ -14,6 +14,7 @@ import {
   DomainError,
   propose,
   proposeBatchReschedule,
+  supersedePending,
 } from '../domain/agenda';
 import { getDailyInsights } from '../domain/insights';
 import { foldText, retrieveKnowledge } from '../domain/knowledge';
@@ -50,6 +51,11 @@ function metaModel() {
   return meta.chat(modelId);
 }
 export const PROMPT_VERSION = 'secretary-v5-denta';
+/**
+ * Muse Spark reasons before every tool call and bills that as output. Measured on the same
+ * requests (docs/EVALUACIONES.md): «low» halved tokens and latency with the same decisions.
+ */
+export const META_PROVIDER_OPTIONS = { openai: { reasoningEffort: 'low' } } as const;
 export function createSecretary(state: Workspace, model: LanguageModel, now = new Date()) {
   const sources = new Map<string, SourceEvidence>();
   const proposalIds = new Set<string>();
@@ -57,8 +63,19 @@ export function createSecretary(state: Workspace, model: LanguageModel, now = ne
   let submissions = 0;
   const remember = (proposal: ReturnType<typeof propose>) => {
     proposalIds.add(proposal.id);
+    // A correction ("mejor a las 11") must not leave the earlier card confirmable.
+    supersedePending(state, proposal, proposalIds);
     return proposal;
   };
+  // Only the fields a change needs; never the appointment's own id, version or status.
+  const visit = (a: Workspace['appointments'][number]) => ({
+    appointmentId: a.id,
+    patient: a.patient,
+    doctorId: a.doctorId,
+    serviceId: a.serviceId,
+    date: a.date,
+    time: a.time,
+  });
   const safe = <T>(fn: () => T) => {
     try {
       return fn();
@@ -73,6 +90,7 @@ export function createSecretary(state: Workspace, model: LanguageModel, now = ne
     // Muse Spark counts reasoning as output (~1.5k per step measured); 1800 cut ambiguous turns.
     maxOutputTokens: 4000,
     maxRetries: 1,
+    providerOptions: META_PROVIDER_OPTIONS,
     instructions: `Sos Denta Copilot, secretaria de Clínica Brisa Dental, una clínica ficticia.
 Respondé en español natural, breve y amable, en voseo. Hoy es ${clinicToday(now)}, zona America/Costa_Rica.
 Calendario de los próximos días (usalo para resolver mañana, pasado mañana, el viernes, el lunes, etc.; siempre la próxima ocurrencia):
@@ -92,6 +110,7 @@ Para agenda consultá listAppointments y findAvailability. Nunca inventés IDs, 
 No generés propuestas de cambios sin que el usuario solicite esa acción y haya definido paciente, fecha, hora y servicio.
 Si falta un dato preguntalo, todos juntos en una sola pregunta. Si hay varias citas o pacientes posibles, preguntá cuál. No elijás arbitrariamente.
 Si mencionan a un paciente por nombre (aunque sea parcial), buscalo con listAppointments antes de pedir más datos; si hay una sola cita que coincide, usala.
+Si el usuario corrige una propuesta pendiente (otra hora, otro día), prepará la nueva: la anterior se descarta sola.
 Las herramientas de propuesta NO escriben citas. Decí que está pendiente y pedí confirmar la tarjeta.
 Solo un clic del usuario en la tarjeta ejecuta el cambio. Un 'sí' en el chat no confirma.
 No afirmés éxito hasta ver estado confirmed en el contexto del servidor. Una tool con error no tuvo éxito.
@@ -176,7 +195,7 @@ Hilo simulado reciente: ${JSON.stringify((state.patientThread ?? []).slice(-6))}
           safe(() => {
             const a = state.appointments.find((a) => a.id === appointmentId);
             if (!a) throw new DomainError('No encontramos esa cita.');
-            return remember(propose(state, { ...a, appointmentId, action: 'cancel' }, now));
+            return remember(propose(state, { ...visit(a), action: 'cancel' }, now));
           }),
       }),
       proposeFollowUp: tool({
@@ -221,7 +240,7 @@ Hilo simulado reciente: ${JSON.stringify((state.patientThread ?? []).slice(-6))}
             const a = state.appointments.find((a) => a.id === appointmentId);
             if (!a) throw new DomainError('No encontramos esa cita.');
             return remember(
-              propose(state, { ...a, appointmentId, action: 'reschedule', date, time }, now),
+              propose(state, { ...visit(a), action: 'reschedule', date, time }, now),
             );
           }),
       }),
@@ -245,7 +264,7 @@ Hilo simulado reciente: ${JSON.stringify((state.patientThread ?? []).slice(-6))}
         execute: async ({ professionalId, date, motivo }) =>
           safe(() => {
             const batch = proposeBatchReschedule(state, { doctorId: professionalId, date, motivo }, now);
-            for (const proposal of batch.proposals) proposalIds.add(proposal.id);
+            for (const proposal of batch.proposals) remember(proposal);
             return {
               batchId: batch.batchId,
               motivo: batch.motivo,
