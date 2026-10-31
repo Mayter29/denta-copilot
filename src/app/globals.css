@@ -230,6 +230,47 @@ a {
 .sidebar-bottom {
   margin-top: auto;
 }
+.demo-reset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 14px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-size: 11px;
+}
+.demo-reset:hover {
+  background: #e4eef1;
+  color: var(--content);
+}
+.demo-reset:focus-visible,
+.demo-reset-confirm button:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
+}
+.demo-reset-confirm {
+  margin: 10px 0 14px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 11px;
+}
+.demo-reset-confirm p {
+  margin: 0 0 8px;
+  color: var(--secondary);
+}
+.demo-reset-confirm div {
+  display: flex;
+  gap: 6px;
+}
+.demo-reset-confirm [role='alert'] {
+  margin: 8px 0 0;
+  color: var(--danger);
+}
 .build-card {
   border: 1px solid #d4e4e8;
   border-radius: 12px;

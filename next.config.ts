@@ -1,3 +1,4 @@
 import type { NextConfig } from 'next';
-const config: NextConfig = { poweredByHeader: false };
+// Top-right keeps the dev badge off the sidebar controls; errors still surface.
+const config: NextConfig = { poweredByHeader: false, devIndicators: { position: 'top-right' } };
 export default config;

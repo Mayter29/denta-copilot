@@ -5,6 +5,7 @@ import type { Workspace } from '../domain/types';
 import { POST as confirm } from '../../app/api/proposals/route';
 import { POST as patientReply } from '../../app/api/patient-reply/route';
 import { POST as transcribe } from '../../app/api/transcribe/route';
+import { DELETE as resetDemo } from '../../app/api/workspace/route';
 import { withWorkspace } from './workspace';
 
 const memory = vi.hoisted(() => ({ state: undefined as Workspace | undefined }));
@@ -159,4 +160,25 @@ it('audio devuelve solo borrador: no abre chat ni propone ni confirma', async ()
   });
   expect(withWorkspace).not.toHaveBeenCalled();
   expect(memory.state).toEqual(before);
+});
+
+it('reiniciar la demo vuelve a la semilla ficticia y exige origen local', async () => {
+  const state = memory.state!;
+  const proposal = propose(state, change, now);
+  state.messages.push({ id: 'm1', role: 'user', content: 'hola' });
+  const foreign = new Request('http://127.0.0.1:3420/api/workspace', {
+    method: 'DELETE',
+    headers: { host: '127.0.0.1:3420', origin: 'https://evil.example' },
+  });
+  expect((await resetDemo(foreign)).status).toBe(403);
+  expect(state.proposals).toHaveLength(1);
+  const local = new Request('http://127.0.0.1:3420/api/workspace', {
+    method: 'DELETE',
+    headers: { host: '127.0.0.1:3420', origin: 'http://127.0.0.1:3420' },
+  });
+  expect((await resetDemo(local)).status).toBe(204);
+  expect(state.proposals.some((p) => p.id === proposal.id)).toBe(false);
+  expect(state.messages).toEqual([]);
+  expect(state.audit).toEqual([]);
+  expect(state.appointments.some((a) => a.id === 'demo-show-elena')).toBe(true);
 });

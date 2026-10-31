@@ -20,6 +20,7 @@ import { applyChatDelta } from '@/lib/domain/chat-delta';
 import { LOCAL_CATALOG, type AgendaCatalog } from '@/lib/domain/catalog';
 import { AgendaPanel } from './AgendaPanel';
 import { ProposalList } from './ProposalList';
+import { DemoReset } from './DemoReset';
 import { BriefingCards } from './briefing/BriefingCards';
 import { TimeChips } from './chat/TimeChips';
 import { ResultLine } from './chat/ResultLine';
@@ -314,6 +315,15 @@ export function DemoWorkspace() {
               <span>Demostración local · datos ficticios</span>
             </div>
           </div>
+          <DemoReset
+            disabled={busy}
+            onReset={async () => {
+              setDraft('');
+              setDate('');
+              setSection('copilot');
+              await load();
+            }}
+          />
         </div>
       </nav>
       <main className="main">
@@ -403,7 +413,8 @@ export function DemoWorkspace() {
                     <div className="message-content">
                       {message.result ? <ResultLine kind={message.result.kind} /> : null}
                       <Markdown>{message.content}</Markdown>
-                      {message.role === 'assistant' ? (
+                      {/* Times are worth picking only while choosing; a proposal is confirmed on its card. */}
+                      {message.role === 'assistant' && message.result?.kind !== 'proposal' ? (
                         <TimeChips
                           text={message.content}
                           disabled={busy || audioActive}

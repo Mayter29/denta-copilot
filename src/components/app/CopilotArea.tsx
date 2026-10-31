@@ -58,7 +58,7 @@ function MessageArticle({
         <div className="message-content">
           {message.result ? <ResultLine kind={message.result.kind} /> : null}
           <Markdown>{message.content}</Markdown>
-          {message.role === 'assistant' && onPickTime ? (
+          {message.role === 'assistant' && onPickTime && message.result?.kind !== 'proposal' ? (
             <TimeChips text={message.content} onPick={onPickTime} disabled={timeDisabled} />
           ) : null}
           {message.pending ? <p className="muted small">Enviando…</p> : null}
