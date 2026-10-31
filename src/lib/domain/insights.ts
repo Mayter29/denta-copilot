@@ -1,4 +1,4 @@
-import type { Appointment } from './types';
+import { formatClinicDate, type Appointment } from './types';
 
 export type InsightSlot = { doctorId: string; date: string; time: string; serviceId: string };
 export type InsightPerson = { appointmentId: string; patient: string; date: string; time: string };
@@ -96,6 +96,7 @@ export function briefingActions(
   names: { doctors: Map<string, string>; services: Map<string, string> },
 ): BriefingAction[] {
   const short = (patient: string) => patient.replace(' (demo)', '');
+  const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
   const cards: BriefingAction[] = [];
   cards.push({
     key: 'unconfirmed',
@@ -103,7 +104,7 @@ export function briefingActions(
     detail:
       insights.unconfirmedTomorrow.length === 0
         ? 'Todo confirmado. Podés revisar los huecos libres.'
-        : `${insights.unconfirmedTomorrow.length} cita(s): ${insights.unconfirmedTomorrow
+        : `${count(insights.unconfirmedTomorrow.length, 'cita', 'citas')}: ${insights.unconfirmedTomorrow
             .slice(0, 3)
             .map((p) => `${short(p.patient)} ${p.time}`)
             .join(' · ')}`,
@@ -115,25 +116,25 @@ export function briefingActions(
     detail:
       insights.recentNoShows.length === 0
         ? 'Sin inasistencias esta semana. Buen ritmo.'
-        : `${insights.recentNoShows.length} inasistencia(s): ${insights.recentNoShows
+        : `${count(insights.recentNoShows.length, 'inasistencia', 'inasistencias')}: ${insights.recentNoShows
             .slice(0, 3)
             .map((p) => short(p.patient))
             .join(' · ')}`,
     prompt: 'Quiero hacer seguimiento de las inasistencias recientes.',
   });
-  const slots = insights.freeSlots.slice(0, 3);
+  // One group per professional and day: "Dr. Andrés Vega, sáb 31 oct: 08:00, 08:30".
+  const slotGroups = new Map<string, string[]>();
+  for (const s of insights.freeSlots.slice(0, 3)) {
+    const key = `${names.doctors.get(s.doctorId) ?? s.doctorId}, ${formatClinicDate(s.date)}`;
+    slotGroups.set(key, [...(slotGroups.get(key) ?? []), s.time]);
+  }
   cards.push({
     key: 'slots',
     title: 'Huecos libres',
     detail:
-      slots.length === 0
+      slotGroups.size === 0
         ? 'La agenda próxima está completa.'
-        : slots
-            .map(
-              (s) =>
-                `${names.doctors.get(s.doctorId) ?? s.doctorId} ${s.date.slice(5)} ${s.time}`,
-            )
-            .join(' · '),
+        : [...slotGroups].map(([key, times]) => `${key}: ${times.join(', ')}`).join(' · '),
     prompt: '¿Qué huecos libres tenemos en los próximos días?',
   });
   cards.push({
@@ -142,7 +143,7 @@ export function briefingActions(
     detail:
       insights.patientsWithoutFuture.length === 0
         ? 'Nadie quedó sin próxima cita.'
-        : `${insights.patientsWithoutFuture.length} paciente(s): ${insights.patientsWithoutFuture
+        : `${count(insights.patientsWithoutFuture.length, 'paciente', 'pacientes')}: ${insights.patientsWithoutFuture
             .slice(0, 3)
             .map((p) => short(p.patient))
             .join(' · ')}`,

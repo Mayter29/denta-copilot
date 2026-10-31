@@ -1,7 +1,9 @@
 import { CalendarCheck2, Check, X } from 'lucide-react';
 import {
   doctors as localDoctors,
+  formatClinicDate,
   services as localServices,
+  type Appointment,
   type Proposal,
 } from '@/lib/domain/types';
 const labels = {
@@ -22,8 +24,11 @@ export function ProposalCard({
   onDecide,
   doctors = localDoctors,
   services = localServices,
+  previous,
 }: {
   proposal: Proposal;
+  /** Original appointment of a pending reschedule, shown as «antes». */
+  previous?: Pick<Appointment, 'date' | 'time'>;
   busy: boolean;
   onDecide: (id: string, approved: boolean) => void;
   doctors?: { id: string; name: string }[];
@@ -50,7 +55,15 @@ export function ProposalCard({
         <div>
           <dt>Fecha</dt>
           <dd>
-            {c.date} · {c.time}
+            {previous ? (
+              <>
+                <s>
+                  {formatClinicDate(previous.date)} · {previous.time}
+                </s>{' '}
+                →{' '}
+              </>
+            ) : null}
+            {formatClinicDate(c.date)} · {c.time}
           </dd>
         </div>
       </dl>

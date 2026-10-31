@@ -1,6 +1,6 @@
 'use client';
 import { CalendarCheck2, Check, CheckCheck, X } from 'lucide-react';
-import type { Proposal } from '@/lib/domain/types';
+import { formatClinicDate, type Appointment, type Proposal } from '@/lib/domain/types';
 
 const states: Record<Proposal['status'], string> = {
   pending: 'Pendiente de tu confirmación',
@@ -20,8 +20,11 @@ export function BatchProposalCard({
   onDecideBatch,
   doctors = [],
   services = [],
+  appointments = [],
 }: {
   proposals: Proposal[];
+  /** Current agenda, to show the original slot of each pending move. */
+  appointments?: Appointment[];
   busy: boolean;
   onDecide: (id: string, approved: boolean) => void;
   onDecideBatch: (batchId: string, approved: boolean) => void;
@@ -32,13 +35,13 @@ export function BatchProposalCard({
   if (!first?.change.batchId) return null;
   const batchId = first.change.batchId;
   const pending = proposals.filter((p) => p.status === 'pending');
-  const confirmed = proposals.length - pending.length;
+  const confirmed = proposals.filter((p) => p.status === 'confirmed').length;
   return (
     <article className={`proposal batch ${pending.length ? 'pending' : 'confirmed'}`}>
       <div className="proposal-title">
         <CalendarCheck2 size={19} />
         <strong>
-          Reagendar en lote · {proposals.length} cita(s)
+          Reagendar en lote · {proposals.length} {proposals.length === 1 ? 'cita' : 'citas'}
         </strong>
         <span className="badge">
           {confirmed}/{proposals.length} aplicadas
@@ -48,6 +51,10 @@ export function BatchProposalCard({
       <ul className="batch-rows">
         {proposals.map((proposal) => {
           const c = proposal.change;
+          const before =
+            proposal.status === 'pending'
+              ? appointments.find((a) => a.id === c.appointmentId)
+              : undefined;
           return (
             <li key={proposal.id} className={`batch-row ${proposal.status}`}>
               <div>
@@ -57,7 +64,15 @@ export function BatchProposalCard({
                   {doctors.find((d) => d.id === c.doctorId)?.name}
                 </span>
                 <span>
-                  {c.date} · {c.time} · {states[proposal.status]}
+                  {before ? (
+                    <>
+                      <s>
+                        {formatClinicDate(before.date)} {before.time}
+                      </s>{' '}
+                      →{' '}
+                    </>
+                  ) : null}
+                  {formatClinicDate(c.date)} · {c.time} · {states[proposal.status]}
                 </span>
               </div>
               {proposal.status === 'pending' ? (

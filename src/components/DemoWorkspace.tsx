@@ -14,7 +14,7 @@ import {
   Sparkles,
   Zap,
 } from 'lucide-react';
-import type { Workspace } from '@/lib/domain/types';
+import type { ChatEntry, Workspace } from '@/lib/domain/types';
 import type { DailyInsights } from '@/lib/domain/insights';
 import { applyChatDelta } from '@/lib/domain/chat-delta';
 import { LOCAL_CATALOG, type AgendaCatalog } from '@/lib/domain/catalog';
@@ -72,6 +72,12 @@ async function fetchJson(url: string, body?: unknown) {
   if (!response.ok) throw new Error(data.error || 'No se pudo completar la solicitud.');
   return data;
 }
+type NavSection = 'copilot' | 'agenda' | 'knowledge';
+const navItems: { id: NavSection; label: string; icon: typeof MessageSquare }[] = [
+  { id: 'copilot', label: 'Copiloto', icon: MessageSquare },
+  { id: 'agenda', label: 'Agenda', icon: CalendarDays },
+  { id: 'knowledge', label: 'Conocimiento', icon: Layers2 },
+];
 export function DemoWorkspace() {
   const [state, setState] = useState<View | null>(null);
   const [draft, setDraft] = useState('');
@@ -82,6 +88,8 @@ export function DemoWorkspace() {
   const [date, setDate] = useState('');
   const [tab, setTab] = useState('agenda');
   const [contextOpen, setContextOpen] = useState(false);
+  // Sidebar highlight: the section the person chose, not every programmatic panel switch.
+  const [section, setSection] = useState<NavSection>('copilot');
   const bottom = useRef<HTMLDivElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [audioActive, setAudioActive] = useState(false);
@@ -238,6 +246,19 @@ export function DemoWorkspace() {
     }
   }
   const catalog = state?.catalog ?? LOCAL_CATALOG;
+  // Each card renders under the message that created it, with its live status.
+  const liveProposals = new Map((state?.proposals ?? []).map((p) => [p.id, p]));
+  const proposalsOf = (message: ChatEntry) =>
+    (message.result?.proposals ?? []).flatMap((p) => liveProposals.get(p.id) ?? []);
+  const linkedIds = new Set(state?.messages.flatMap((m) => proposalsOf(m).map((p) => p.id)));
+  const proposalListProps = {
+    busy: busy || audioActive,
+    onDecide,
+    onDecideBatch,
+    doctors: catalog.doctors,
+    services: catalog.services,
+    appointments: state?.appointments,
+  };
   function choose(text: string) {
     if (busy || audioActiveRef.current) return;
     setDraft(text);
@@ -256,30 +277,27 @@ export function DemoWorkspace() {
           <ChevronDown size={14} />
         </div>
         <span className="nav-label">ESPACIO DE TRABAJO</span>
-        <button className="nav-item active" onClick={() => textarea.current?.focus()}>
-          <MessageSquare size={18} />
-          Copiloto<span className="tiny-badge">AI</span>
-        </button>
-        <button
-          className="nav-item"
-          onClick={() => {
-            setContextOpen(true);
-            setTab('agenda');
-          }}
-        >
-          <CalendarDays size={18} />
-          Agenda
-        </button>
-        <button
-          className="nav-item"
-          onClick={() => {
-            setContextOpen(true);
-            setTab('knowledge');
-          }}
-        >
-          <Layers2 size={18} />
-          Conocimiento
-        </button>
+        {navItems.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            className={`nav-item${section === id ? ' active' : ''}`}
+            aria-current={section === id ? 'true' : undefined}
+            onClick={() => {
+              setSection(id);
+              if (id === 'copilot') {
+                textarea.current?.focus();
+                return;
+              }
+              setContextOpen(true);
+              setTab(id);
+            }}
+          >
+            <Icon size={18} />
+            {label}
+            {id === 'copilot' ? <span className="tiny-badge">AI</span> : null}
+          </button>
+        ))}
         <div className="sidebar-bottom">
           <div className="build-card">
             <Zap size={19} />
@@ -307,7 +325,11 @@ export function DemoWorkspace() {
               className="icon-button"
               title={contextOpen ? 'Ocultar contexto' : 'Mostrar contexto'}
               aria-label={contextOpen ? 'Ocultar contexto' : 'Mostrar contexto'}
-              onClick={() => setContextOpen((v) => !v)}
+              onClick={() => {
+                // Hiding the panel returns the highlight to the chat.
+                if (contextOpen) setSection('copilot');
+                setContextOpen(!contextOpen);
+              }}
             >
               {contextOpen ? <PanelRightClose size={19} /> : <PanelRightOpen size={19} />}
             </button>
@@ -395,6 +417,7 @@ export function DemoWorkspace() {
                         </details>
                       ))}
                     </div>
+                    <ProposalList proposals={proposalsOf(message)} {...proposalListProps} />
                   </div>
                 </article>
               ))}
@@ -411,12 +434,8 @@ export function DemoWorkspace() {
                 </article>
               ) : null}
               <ProposalList
-                proposals={state?.proposals ?? []}
-                busy={busy || audioActive}
-                onDecide={onDecide}
-                onDecideBatch={onDecideBatch}
-                doctors={catalog.doctors}
-                services={catalog.services}
+                proposals={(state?.proposals ?? []).filter((p) => !linkedIds.has(p.id))}
+                {...proposalListProps}
               />
             </div>
           )}
@@ -456,7 +475,10 @@ export function DemoWorkspace() {
           date={date}
           onDate={setDate}
           tab={tab}
-          onTab={setTab}
+          onTab={(next) => {
+            setTab(next);
+            setSection(next === 'agenda' || next === 'knowledge' ? next : 'copilot');
+          }}
           catalog={catalog}
           onPatientReply={(appointmentId, reply) => void onPatientReply(appointmentId, reply)}
           replyBusy={replyBusy}
