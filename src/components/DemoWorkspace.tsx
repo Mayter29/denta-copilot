@@ -83,9 +83,10 @@ export function DemoWorkspace() {
   const [state, setState] = useState<View | null>(null);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
-  const [proposalBusy, setProposalBusy] = useState(false);
+  // ID (or batch ID) being applied, so only that card says «Aplicando…».
+  const [proposalBusy, setProposalBusy] = useState<string | null>(null);
   const chat = useChatRequest();
-  const busy = chat.busy || proposalBusy;
+  const busy = chat.busy || proposalBusy !== null;
   const [date, setDate] = useState('');
   const [tab, setTab] = useState('agenda');
   const [contextOpen, setContextOpen] = useState(false);
@@ -201,7 +202,7 @@ export function DemoWorkspace() {
   }
   async function onDecide(id: string, approved: boolean) {
     if (busy || audioActiveRef.current) return;
-    setProposalBusy(true);
+    setProposalBusy(id);
     setError('');
     try {
       const data = await fetchJson('/api/proposals', { id, approved });
@@ -216,12 +217,12 @@ export function DemoWorkspace() {
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setProposalBusy(false);
+      setProposalBusy(null);
     }
   }
   async function onDecideBatch(batchId: string, approved: boolean) {
     if (busy || audioActiveRef.current) return;
-    setProposalBusy(true);
+    setProposalBusy(batchId);
     setError('');
     try {
       const data = await fetchJson('/api/proposals', { batchId, approved });
@@ -243,7 +244,7 @@ export function DemoWorkspace() {
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setProposalBusy(false);
+      setProposalBusy(null);
     }
   }
   const catalog = state?.catalog ?? LOCAL_CATALOG;
@@ -259,6 +260,7 @@ export function DemoWorkspace() {
     doctors: catalog.doctors,
     services: catalog.services,
     appointments: state?.appointments,
+    deciding: proposalBusy,
   };
   function choose(text: string) {
     if (busy || audioActiveRef.current) return;

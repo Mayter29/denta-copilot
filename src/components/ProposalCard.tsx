@@ -1,4 +1,4 @@
-import { CalendarCheck2, Check, X } from 'lucide-react';
+import { CalendarCheck2, Check, LoaderCircle, X } from 'lucide-react';
 import {
   doctors as localDoctors,
   formatClinicDate,
@@ -21,6 +21,7 @@ const states = {
 export function ProposalCard({
   proposal,
   busy,
+  applying = false,
   onDecide,
   doctors = localDoctors,
   services = localServices,
@@ -30,6 +31,8 @@ export function ProposalCard({
   /** Original appointment of a pending reschedule, shown as «antes». */
   previous?: Pick<Appointment, 'date' | 'time'>;
   busy: boolean;
+  /** This card is being confirmed or discarded right now. */
+  applying?: boolean;
   onDecide: (id: string, approved: boolean) => void;
   doctors?: { id: string; name: string }[];
   services?: { id: string; name: string }[];
@@ -95,8 +98,8 @@ export function ProposalCard({
           </p>
           <div className="proposal-buttons">
             <button className="primary" disabled={busy} onClick={() => onDecide(proposal.id, true)}>
-              <Check size={16} />
-              {c.action === 'follow_up' ? 'Confirmar mensaje simulado' : 'Confirmar cambio'}
+              {applying ? <LoaderCircle size={16} className="spinner" /> : <Check size={16} />}
+              {applying ? 'Aplicando…' : c.action === 'follow_up' ? 'Confirmar mensaje simulado' : 'Confirmar cambio'}
             </button>
             <button
               className="secondary"

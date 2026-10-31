@@ -1,5 +1,5 @@
 'use client';
-import { CalendarCheck2, Check, CheckCheck, X } from 'lucide-react';
+import { CalendarCheck2, Check, CheckCheck, LoaderCircle, X } from 'lucide-react';
 import { formatClinicDate, type Appointment, type Proposal } from '@/lib/domain/types';
 
 const states: Record<Proposal['status'], string> = {
@@ -21,10 +21,13 @@ export function BatchProposalCard({
   doctors = [],
   services = [],
   appointments = [],
+  deciding = null,
 }: {
   proposals: Proposal[];
   /** Current agenda, to show the original slot of each pending move. */
   appointments?: Appointment[];
+  /** ID or batch ID currently being applied. */
+  deciding?: string | null;
   busy: boolean;
   onDecide: (id: string, approved: boolean) => void;
   onDecideBatch: (batchId: string, approved: boolean) => void;
@@ -84,7 +87,7 @@ export function BatchProposalCard({
                     disabled={busy}
                     onClick={() => onDecide(proposal.id, true)}
                   >
-                    <Check size={15} />
+                    {deciding === proposal.id ? <LoaderCircle size={15} className="spinner" /> : <Check size={15} />}
                   </button>
                   <button
                     type="button"
@@ -109,8 +112,8 @@ export function BatchProposalCard({
           </p>
           <div className="proposal-buttons">
             <button className="primary" disabled={busy} onClick={() => onDecideBatch(batchId, true)}>
-              <CheckCheck size={16} />
-              Confirmar todas ({pending.length})
+              {deciding === batchId ? <LoaderCircle size={16} className="spinner" /> : <CheckCheck size={16} />}
+              {deciding === batchId ? 'Aplicando…' : `Confirmar todas (${pending.length})`}
             </button>
             <button
               className="secondary"
