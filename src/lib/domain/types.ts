@@ -68,12 +68,17 @@ export type Workspace = {
   patientThread?: PatientMessage[];
   audit: { id: string; action: string; at: string; appointmentId: string }[];
 };
+const generalServices = ['evaluation', 'cleaning', 'extraction'];
 export const doctors = [
-  { id: 'valeria', name: 'Dra. Valeria Soto', specialty: 'Odontología general' },
-  { id: 'andres', name: 'Dr. Andrés Vega', specialty: 'Odontología general' },
-  { id: 'camila', name: 'Dra. Camila Reyes', specialty: 'Odontología general' },
-  { id: 'marco', name: 'Dr. Marco Araya', specialty: 'Ortodoncia' },
+  { id: 'valeria', name: 'Dra. Valeria Soto', specialty: 'Odontología general', services: generalServices },
+  { id: 'andres', name: 'Dr. Andrés Vega', specialty: 'Odontología general', services: generalServices },
+  { id: 'camila', name: 'Dra. Camila Reyes', specialty: 'Odontología general', services: generalServices },
+  { id: 'marco', name: 'Dr. Marco Araya', specialty: 'Ortodoncia', services: ['ortho_control'] },
 ];
+/** True when the professional offers that service. Unknown IDs never match. */
+export function offersService(doctorId: string, serviceId: string) {
+  return doctors.some((d) => d.id === doctorId && d.services.includes(serviceId));
+}
 export const services = [
   { id: 'evaluation', name: 'Valoración', duration: 30, price: 15000 },
   { id: 'cleaning', name: 'Limpieza dental', duration: 60, price: 30000 },
@@ -88,4 +93,12 @@ const clinicDayFormat = new Intl.DateTimeFormat('en-CA', {
 });
 export function clinicToday(now = new Date()) {
   return clinicDayFormat.format(now);
+}
+const shortWeekdays = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+const shortMonths = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+/** "vie 6 nov" for a clinic date. Deterministic (no ICU) so server and browser render the same text. */
+export function formatClinicDate(date: string) {
+  const day = new Date(`${date}T12:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(day.getTime())) return date;
+  return `${shortWeekdays[day.getUTCDay()]} ${day.getUTCDate()} ${shortMonths[day.getUTCMonth()]}`;
 }

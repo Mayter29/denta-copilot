@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   availableSlots,
+  clinicCalendar,
   decide,
   hydrateWorkspace,
   propose,
@@ -151,10 +152,27 @@ describe('agenda administrativa', () => {
     expect(state.patientThread).toEqual(before);
     expect(state.audit).toHaveLength(0);
   });
+  it('no reserva un servicio que el profesional no atiende', () => {
+    const state = seedWorkspace('2026-10-28');
+    const ortho = { ...change, serviceId: 'ortho_control' };
+    expect(() => propose(state, ortho, now)).toThrow('no atiende');
+    expect(() => propose(state, { ...change, doctorId: 'marco' }, now)).toThrow('no atiende');
+    expect(availableSlots(state, change.date, 'marco', 'evaluation', now)).toEqual([]);
+    expect(propose(state, { ...ortho, doctorId: 'marco' }, now).status).toBe('pending');
+  });
+  it('el calendario resuelve días relativos con su día de la semana', () => {
+    const lines = clinicCalendar('2026-11-03', { days: 7 }).split('\n');
+    expect(lines[0]).toBe('martes 2026-11-03 (hoy): 08:00–17:00');
+    expect(lines[1]).toContain('(mañana)');
+    expect(lines[3]).toBe('viernes 2026-11-06: 08:00–17:00');
+    expect(lines[4]).toBe('sábado 2026-11-07: 08:00–12:00');
+    expect(lines[5]).toBe('domingo 2026-11-08: cerrado');
+    expect(clinicCalendar('2026-11-03', { days: 1, hours: false })).toBe('martes 2026-11-03 (hoy)');
+  });
   it('no sigue una cita confirmada, cancelada o con mensaje inválido', () => {
     const state = seedWorkspace('2026-10-28');
     expect(() => propose(state, { ...followUp, appointmentId: 'demo-ana' }, now)).toThrow(
-      'confirmed',
+      'confirmada',
     );
     const cancellation = propose(
       state,

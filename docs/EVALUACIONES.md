@@ -30,7 +30,7 @@ La inyección simulada prueba que ni siquiera una selección adversa de herramie
 
 `eval:live` es una suite separada y explícita que carga `.env.local` solo en el proceso servidor de pruebas. Hace tres casos secuenciales con Meta: datos faltantes, reserva pendiente y horario con fuente. Usa el mismo reloj fijo y nunca confirma una propuesta; todo el estado queda en memoria. No usa Supabase ni escribe archivos de sesiones. No forma parte de `pnpm check`.
 
-Presupuesto máximo de esa suite: tres turnos; cada uno mantiene seis pasos, 1.800 tokens de salida por paso, un reintento del SDK y timeout de 55 segundos. Sin repeticiones de Vitest. Cota conservadora: 36 solicitudes contando reintentos y 64.800 tokens de salida; el consumo efectivo normalmente es menor. No se fija un costo monetario porque depende de la tarifa de la cuenta. Ampliar casos o repeticiones debe ser una decisión explícita.
+Presupuesto máximo de esa suite: tres turnos; cada uno mantiene seis pasos, 4.000 tokens de salida por paso (Muse Spark cuenta el razonamiento como salida; con 1.800 se cortaban turnos ambiguos), un reintento del SDK y timeout de 55 segundos. Sin repeticiones de Vitest. Cota conservadora: 36 solicitudes contando reintentos y 144.000 tokens de salida; el consumo efectivo normalmente es menor. No se fija un costo monetario porque depende de la tarifa de la cuenta. Ampliar casos o repeticiones debe ser una decisión explícita.
 
 ## Evidencia de este corte
 

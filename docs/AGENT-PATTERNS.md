@@ -27,7 +27,7 @@ Los enlaces señalan exactamente la revisión analizada.
 2. `Workspace` no incluye ejecuciones, pasos, razones de bloqueo, tokens ni versión de prompt. `withWorkspace` escribe el estado después de completar la función; si el modelo falla, no se guarda el progreso intermedio de ese turno. La arquitectura actual limita los efectos a propuestas, pero todavía no ofrece reanudación duradera.
 3. `agent.ts` pide no afirmar éxito antes de confirmar, pero devuelve `result.text` libre. Un prompt no prueba que la frase coincida con el estado de la agenda. El endpoint de confirmación sí produce un cambio auditable y no llama a Meta.
 4. Las fuentes son ficticias y estáticas. Sus IDs existen, pero no hay verificación estructurada de las citas que el agente redacta ni versión/hash de la fuente asociada a cada turno.
-5. Los límites de seis pasos, 1.800 tokens de salida, 55 segundos y un reintento ya existen. Falta distinguir explícitamente una respuesta completa de una ejecución que terminó por límite, error o espera de información. No hay un presupuesto agregado por ejecución.
+5. Los límites de seis pasos, 4.000 tokens de salida, 55 segundos y un reintento ya existen. Falta distinguir explícitamente una respuesta completa de una ejecución que terminó por límite, error o espera de información. No hay un presupuesto agregado por ejecución.
 
 ## Adaptación priorizada
 

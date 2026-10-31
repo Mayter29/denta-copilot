@@ -112,6 +112,21 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
     expect(state.appointments.every((a) => a.status === 'scheduled')).toBe(true);
   });
 
+  it('encuentra al paciente aunque se escriba sin tildes ni mayúsculas', async () => {
+    const state = seedWorkspace('2026-10-27');
+    const model = scriptedModel([
+      { toolName: 'listAppointments', input: { patient: 'luis solis' } },
+      (prompt) => {
+        const found = toolOutput<{ id: string }[]>(prompt, 'listAppointments');
+        expect(found.map((a) => a.id)).toEqual(['demo-luis']);
+        return final('answer', 'Luis tiene cita hoy a las 10:30.');
+      },
+    ]);
+    expect((await runSecretary(state, '¿Cuándo es la cita de luis solis?', { model, now })).kind).toBe(
+      'answer',
+    );
+  });
+
   it('espacio ocupado devuelve conflicto real y ninguna tarjeta', async () => {
     const state = seedWorkspace('2026-10-27');
     const model = scriptedModel([
@@ -279,9 +294,7 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
         },
       },
       (prompt) => {
-        expect(toolOutput<{ error: string }>(prompt, 'proposeFollowUp').error).toContain(
-          'confirmed',
-        );
+        expect(toolOutput<{ error: string }>(prompt, 'proposeFollowUp').error).toContain('confirmada');
         return final('answer', 'Ana ya confirmó.');
       },
     ]);
