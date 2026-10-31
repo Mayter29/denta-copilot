@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import {
   clinicToday,
   doctors,
+  offersService,
   services,
   type Appointment,
   type Attendance,
@@ -10,6 +11,8 @@ import {
   type PatientMessage,
   type Workspace,
 } from './types';
+
+import { foldText } from './knowledge';
 
 export class DomainError extends Error {}
 const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
@@ -102,6 +105,21 @@ function addDays(date: string, days: number) {
   return clinicToday(cursor);
 }
 
+const weekdayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+/**
+ * Next days with weekday (and demo opening hours), one per line, so relative dates
+ * resolve without model arithmetic. Connected branches omit hours: theirs come from the server.
+ */
+export function clinicCalendar(today: string, { days = 14, hours = true } = {}) {
+  return Array.from({ length: days }, (_, offset) => {
+    const day = addDays(today, offset);
+    const weekday = new Date(`${day}T12:00:00-06:00`).getUTCDay();
+    const label = offset === 0 ? ' (hoy)' : offset === 1 ? ' (mañana)' : '';
+    const open = weekday === 0 ? 'cerrado' : weekday === 6 ? '08:00–12:00' : '08:00–17:00';
+    return `${weekdayNames[weekday]} ${day}${label}${hours ? `: ${open}` : ''}`;
+  }).join('\n');
+}
+
 function nextWeekday(date: string, weekday: number) {
   let cursor = addDays(date, 1);
   while (new Date(`${cursor}T12:00:00-06:00`).getUTCDay() !== weekday) cursor = addDays(cursor, 1);
@@ -125,7 +143,7 @@ function showcaseAppointments(
     { id: 'demo-show-mario', patient: 'Mario Quirós (demo)', doctorId: 'valeria', serviceId: 'cleaning', date: friday, time: '09:00', duration: 60, status: 'scheduled', version: 1, attendance: 'confirmed' },
     { id: 'demo-show-mendez', patient: 'Sofía Méndez (demo)', doctorId: 'valeria', serviceId: 'evaluation', date: friday, time: '10:30', duration: 30, status: 'scheduled', version: 1, attendance: 'unconfirmed' },
     { id: 'demo-show-rosa', patient: 'Rosa Aguilar (demo)', doctorId: 'valeria', serviceId: 'extraction', date: friday, time: '13:00', duration: 45, status: 'scheduled', version: 1, attendance: 'confirmed' },
-    { id: 'demo-show-pablo', patient: 'Pablo Núñez (demo)', doctorId: 'valeria', serviceId: 'ortho_control', date: friday, time: '15:00', duration: 30, status: 'scheduled', version: 1, attendance: 'unconfirmed' },
+    { id: 'demo-show-pablo', patient: 'Pablo Núñez (demo)', doctorId: 'valeria', serviceId: 'evaluation', date: friday, time: '15:00', duration: 30, status: 'scheduled', version: 1, attendance: 'unconfirmed' },
     { id: 'demo-show-maria', patient: 'María Gómez (demo)', doctorId: 'valeria', serviceId: 'evaluation', date: addDays(date, -6), time: '10:00', duration: 30, status: 'scheduled', version: 1, attendance: 'no_show' },
     { id: 'demo-show-jose', patient: 'José Pérez (demo)', doctorId: 'andres', serviceId: 'evaluation', date: addDays(date, -3), time: '11:00', duration: 30, status: 'scheduled', version: 1, attendance: 'no_show' },
     { id: 'demo-show-carmen', patient: 'Carmen Ruiz (demo)', doctorId: 'marco', serviceId: 'ortho_control', date: monday, time: '09:00', duration: 30, status: 'scheduled', version: 1, attendance: 'confirmed' },
@@ -162,9 +180,9 @@ export function hydrateWorkspace(state: Workspace): Workspace {
 function followUpMessage(message: string | undefined) {
   const text = message?.trim() ?? '';
   if (text.length < 12 || text.length > 320)
-    throw new DomainError('Follow-up message must be 12–320 characters.');
+    throw new DomainError('El mensaje de seguimiento debe tener entre 12 y 320 caracteres.');
   if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(text))
-    throw new DomainError('Follow-up message has invalid characters.');
+    throw new DomainError('El mensaje de seguimiento tiene caracteres inválidos.');
   return text;
 }
 
@@ -187,6 +205,8 @@ export function validateSlot(state: Workspace, change: Change, now = new Date())
     throw new DomainError('Profesional no disponible.');
   const service = services.find((s) => s.id === change.serviceId);
   if (!service) throw new DomainError('Servicio no disponible.');
+  if (!offersService(change.doctorId, change.serviceId))
+    throw new DomainError('Ese profesional no atiende ese servicio.');
   const start = minutes(change.time),
     end = start + service.duration;
   const weekday = date.getUTCDay();
@@ -217,7 +237,7 @@ export function propose(state: Workspace, change: Change, now = new Date()): Pro
   if (change.action === 'book' && change.appointmentId)
     throw new DomainError('Una reserva nueva no puede reemplazar una cita.');
   if (change.action === 'follow_up' && !needsFollowUp(original))
-    throw new DomainError('That visit is already confirmed.');
+    throw new DomainError('Esa cita ya está confirmada; no necesita seguimiento.');
   const canonical: Change =
     change.action === 'follow_up' && original
       ? {
@@ -262,6 +282,33 @@ export function propose(state: Workspace, change: Change, now = new Date()): Pro
   };
   state.proposals.push(proposal);
   return proposal;
+}
+/**
+ * A correction replaces what it corrects: a newer pending proposal for the same visit, or a
+ * new booking for the same patient and service, discards older pending ones. Proposals in
+ * `keep` (the current turn) are never touched, so alternatives offered together survive.
+ */
+export function supersedePending(state: Workspace, proposal: Proposal, keep: ReadonlySet<string>) {
+  const c = proposal.change;
+  const replaced: string[] = [];
+  for (const p of state.proposals) {
+    if (p.status !== 'pending' || p.id === proposal.id || keep.has(p.id)) continue;
+    const sameVisit =
+      !!c.appointmentId &&
+      p.change.appointmentId === c.appointmentId &&
+      c.action !== 'follow_up' &&
+      p.change.action !== 'follow_up';
+    const sameBooking =
+      c.action === 'book' &&
+      p.change.action === 'book' &&
+      p.change.serviceId === c.serviceId &&
+      foldText(p.change.patient.trim()) === foldText(c.patient.trim());
+    if (sameVisit || sameBooking) {
+      p.status = 'rejected';
+      replaced.push(p.id);
+    }
+  }
+  return replaced;
 }
 export function decide(state: Workspace, id: string, approved: boolean, now = new Date()) {
   const proposal = state.proposals.find((p) => p.id === id);
@@ -395,7 +442,14 @@ export function proposeBatchReschedule(
   if (!doctors.some((d) => d.id === input.doctorId))
     throw new DomainError('Profesional no disponible.');
   const affected = state.appointments
-    .filter((a) => a.status === 'scheduled' && a.doctorId === input.doctorId && a.date === input.date)
+    .filter(
+      (a) =>
+        a.status === 'scheduled' &&
+        a.doctorId === input.doctorId &&
+        a.date === input.date &&
+        // A visit that already started cannot be moved for an absence.
+        new Date(`${a.date}T${a.time}:00-06:00`).getTime() > now.getTime(),
+    )
     .sort((a, b) => a.time.localeCompare(b.time));
   if (!affected.length)
     throw new DomainError('No hay citas programadas ese día para ese profesional.');

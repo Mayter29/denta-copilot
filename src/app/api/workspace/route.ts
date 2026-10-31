@@ -1,5 +1,5 @@
 import { apiError, guardLocal, sessionId, withWorkspace } from '@/lib/server/workspace';
-import { availableSlots } from '@/lib/domain/agenda';
+import { availableSlots, seedWorkspace } from '@/lib/domain/agenda';
 import { getDailyInsights } from '@/lib/domain/insights';
 import { clinicToday } from '@/lib/domain/types';
 export const runtime = 'nodejs';
@@ -28,6 +28,20 @@ export async function GET(request: Request) {
         { headers: { 'Cache-Control': 'no-store' } },
       );
     });
+  } catch (error) {
+    return apiError(error);
+  }
+}
+
+/** Restores this session to the fictitious seed so a messy demo can start over. Local data only. */
+export async function DELETE(request: Request) {
+  try {
+    guardLocal(request, true);
+    const id = await sessionId();
+    await withWorkspace(id, (state) => {
+      Object.assign(state, seedWorkspace(clinicToday(), { showcase: true }));
+    });
+    return new Response(null, { status: 204 });
   } catch (error) {
     return apiError(error);
   }

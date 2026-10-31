@@ -1,7 +1,9 @@
-import { CalendarCheck2, Check, X } from 'lucide-react';
+import { CalendarCheck2, Check, LoaderCircle, X } from 'lucide-react';
 import {
   doctors as localDoctors,
+  formatClinicDate,
   services as localServices,
+  type Appointment,
   type Proposal,
 } from '@/lib/domain/types';
 const labels = {
@@ -19,12 +21,18 @@ const states = {
 export function ProposalCard({
   proposal,
   busy,
+  applying = false,
   onDecide,
   doctors = localDoctors,
   services = localServices,
+  previous,
 }: {
   proposal: Proposal;
+  /** Original appointment of a pending reschedule, shown as «antes». */
+  previous?: Pick<Appointment, 'date' | 'time'>;
   busy: boolean;
+  /** This card is being confirmed or discarded right now. */
+  applying?: boolean;
   onDecide: (id: string, approved: boolean) => void;
   doctors?: { id: string; name: string }[];
   services?: { id: string; name: string }[];
@@ -50,7 +58,15 @@ export function ProposalCard({
         <div>
           <dt>Fecha</dt>
           <dd>
-            {c.date} · {c.time}
+            {previous ? (
+              <>
+                <s>
+                  {formatClinicDate(previous.date)} · {previous.time}
+                </s>{' '}
+                →{' '}
+              </>
+            ) : null}
+            {formatClinicDate(c.date)} · {c.time}
           </dd>
         </div>
       </dl>
@@ -73,28 +89,12 @@ export function ProposalCard({
         </details>
       ) : null}
       {proposal.status === 'pending' ? (
-        <>
-          <p className="muted small">
-            {c.action === 'follow_up'
-              ? 'Solo se agrega al canal simulado al confirmar. No envía WhatsApp.'
-              : 'El espacio se vuelve a validar al confirmar.'}{' '}
-            Vigencia: 10 minutos.
-          </p>
-          <div className="proposal-buttons">
-            <button className="primary" disabled={busy} onClick={() => onDecide(proposal.id, true)}>
-              <Check size={16} />
-              {c.action === 'follow_up' ? 'Confirmar mensaje simulado' : 'Confirmar cambio'}
-            </button>
-            <button
-              className="secondary"
-              disabled={busy}
-              onClick={() => onDecide(proposal.id, false)}
-            >
-              <X size={16} />
-              Descartar
-            </button>
-          </div>
-        </>
+        <PendingActions
+          followUp={c.action === 'follow_up'}
+          busy={busy}
+          applying={applying}
+          onDecide={(approved) => onDecide(proposal.id, approved)}
+        />
       ) : (
         <p className="small muted">
           {proposal.status === 'confirmed'
@@ -105,5 +105,40 @@ export function ProposalCard({
         </p>
       )}
     </article>
+  );
+}
+
+/** Confirm/discard for a pending card; the only place a person applies a change. */
+function PendingActions({
+  followUp,
+  busy,
+  applying,
+  onDecide,
+}: {
+  followUp: boolean;
+  busy: boolean;
+  applying: boolean;
+  onDecide: (approved: boolean) => void;
+}) {
+  const label = followUp ? 'Confirmar mensaje simulado' : 'Confirmar cambio';
+  return (
+    <>
+      <p className="muted small">
+        {followUp
+          ? 'Solo se agrega al canal simulado al confirmar. No envía WhatsApp.'
+          : 'El espacio se vuelve a validar al confirmar.'}{' '}
+        Vigencia: 10 minutos.
+      </p>
+      <div className="proposal-buttons">
+        <button className="primary" disabled={busy} onClick={() => onDecide(true)}>
+          {applying ? <LoaderCircle size={16} className="spinner" /> : <Check size={16} />}
+          {applying ? 'Aplicando…' : label}
+        </button>
+        <button className="secondary" disabled={busy} onClick={() => onDecide(false)}>
+          <X size={16} />
+          Descartar
+        </button>
+      </div>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 import { ArrowUpRight, CalendarClock, CalendarX2, Sparkles, UserRoundSearch } from 'lucide-react';
 import { briefingActions, type DailyInsights } from '@/lib/domain/insights';
+import { formatClinicDate } from '@/lib/domain/types';
 
 const icons: Record<string, typeof CalendarClock> = {
   unconfirmed: CalendarClock,
@@ -32,7 +33,7 @@ export function BriefingCards({
     <div className="briefing" aria-label="Resumen proactivo del día">
       <p className="briefing-kicker">
         <Sparkles size={14} />
-        Buenos días · {insights.today}
+        Buenos días · {formatClinicDate(insights.today)}
       </p>
       <div className="briefing-grid">
         {cards.map((card) => {

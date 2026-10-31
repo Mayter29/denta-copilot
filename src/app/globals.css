@@ -12,6 +12,7 @@
   --accent-soft: #e6f6f9;
   --danger: #b91c1c;
   --success: #15803d;
+  --info: #0ea5e9;
   font-family: Arial, Helvetica, sans-serif;
   color: var(--content);
   background: var(--app);
@@ -160,27 +161,64 @@ a {
   padding: 0 12px;
   margin-bottom: 13px;
 }
+/* Dentary navigation language: neutral items, accent only on the active one. */
 .nav-item {
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
   gap: 12px;
   border: 0;
   background: none;
-  border-radius: 8px;
-  padding: 13px 12px;
+  border-radius: 10px;
+  padding: 11px 12px;
   font-size: 13px;
+  font-weight: 500;
   text-align: left;
-  margin-bottom: 6px;
+  text-decoration: none;
+  margin-bottom: 4px;
   color: var(--secondary);
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+.nav-item svg {
+  flex-shrink: 0;
+  color: #94a3b8;
+  transition: color 150ms ease;
 }
 .nav-item:hover {
-  background: #e7eef0;
+  background: #e4eef1;
+  color: var(--content);
+}
+.nav-item:hover svg {
+  color: var(--secondary);
 }
 .nav-item.active {
-  background: #dff0f3;
+  background: rgb(42 152 174 / 0.12);
   color: var(--accent-strong);
   font-weight: 700;
+}
+.nav-item.active svg {
+  color: var(--accent);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: var(--accent);
+}
+.nav-item:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
+}
+.nav-item.active .tiny-badge {
+  background: var(--accent);
+  color: #fff;
 }
 .tiny-badge {
   font-size: 9px;
@@ -191,6 +229,47 @@ a {
 }
 .sidebar-bottom {
   margin-top: auto;
+}
+.demo-reset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 14px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-size: 11px;
+}
+.demo-reset:hover {
+  background: #e4eef1;
+  color: var(--content);
+}
+.demo-reset:focus-visible,
+.demo-reset-confirm button:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
+}
+.demo-reset-confirm {
+  margin: 10px 0 14px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 11px;
+}
+.demo-reset-confirm p {
+  margin: 0 0 8px;
+  color: var(--secondary);
+}
+.demo-reset-confirm div {
+  display: flex;
+  gap: 6px;
+}
+.demo-reset-confirm [role='alert'] {
+  margin: 8px 0 0;
+  color: var(--danger);
 }
 .build-card {
   border: 1px solid #d4e4e8;
@@ -483,38 +562,61 @@ a {
   display: flex;
   align-items: flex-end;
   gap: 16px;
-  border: 1px solid #abd5de;
+  /* Transparent border painted by a conic gradient that turns while the composer is in use. */
+  --composer-fill: var(--surface);
+  border: 1.5px solid transparent;
   border-radius: 28px;
   padding: 18px 14px 14px 22px;
-  background: var(--surface);
+  background:
+    linear-gradient(var(--composer-fill), var(--composer-fill)) padding-box,
+    conic-gradient(
+        from var(--composer-angle),
+        #abd5de 60%,
+        color-mix(in oklab, var(--accent) 45%, transparent) 82%,
+        var(--accent) 95%,
+        #abd5de 100%
+      )
+      border-box;
   box-shadow:
     -5px 0 20px #2a98ae0c,
     5px 3px 24px #1a74870b,
     0 8px 24px #183b4608;
-  transition:
-    border-color 200ms,
-    box-shadow 250ms,
-    background-color 200ms;
+  animation: composer-border-spin 6.5s linear infinite paused;
+  transition: box-shadow 250ms;
+}
+@property --composer-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0turn;
+}
+@keyframes composer-border-spin {
+  to {
+    --composer-angle: 1turn;
+  }
 }
 .composer:hover {
-  border-color: #74bccb;
   box-shadow:
     -5px 0 22px #2a98ae18,
     5px 3px 26px #1a748712;
 }
-.composer:focus-within {
-  border-color: var(--accent);
+.composer:focus-within,
+.composer-recording {
+  animation-play-state: running;
   box-shadow:
-    0 0 0 3px #2a98ae12,
-    -6px 0 24px #2a98ae20,
-    6px 4px 28px #1a748714;
+    0 0 24px -4px color-mix(in oklab, var(--accent) 30%, transparent),
+    0 8px 24px #183b4608;
+}
+/* Faster turn while the microphone is capturing. */
+.composer-recording {
+  animation-duration: 3.2s;
 }
 .composer-busy {
-  background: #f5fbfc;
+  --composer-fill: #f5fbfc;
 }
-.composer-recording {
-  border-color: #c35a52;
-  box-shadow: 0 0 0 3px #c35a5212;
+@media (prefers-reduced-motion: reduce) {
+  .composer {
+    animation: none;
+  }
 }
 .composer-audio.is-recording {
   background: #fff0ef;
@@ -530,6 +632,76 @@ a {
   color: var(--accent-strong);
   font-size: 11px;
   min-height: 16px;
+}
+.recording-meter {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 6px;
+}
+.recording-wave {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  overflow: hidden;
+}
+.recording-wave span {
+  width: 3.5px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  transition:
+    height 80ms ease-out,
+    opacity 120ms;
+}
+.recording-wave.silent span {
+  background: #94a3b8;
+  opacity: 0.5;
+}
+.recording-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: recording-pulse 1.2s ease-in-out infinite;
+}
+@keyframes recording-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+.recording-dot.silent {
+  background: #94a3b8;
+  animation: none;
+}
+.recording-clock {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--secondary);
+  white-space: nowrap;
+}
+.recording-clock span {
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .recording-dot {
+    animation: none;
+  }
+  .recording-wave span {
+    transition: none;
+  }
+}
+.dictation-status.idle {
+  min-height: 0;
+  margin: 0;
 }
 .dictation-status meter {
   width: 64px;
@@ -642,12 +814,9 @@ a {
 }
 .composer-disclaimer {
   display: flex;
-  justify-content: center;
   align-items: center;
   gap: 5px;
-  font-size: 9px;
-  color: var(--muted);
-  margin-top: 12px;
+  margin-left: auto;
 }
 .error-message {
   padding: 12px;
@@ -992,6 +1161,18 @@ a {
 }
 .proposal-details dd {
   margin: 0;
+}
+.proposal-details dd s {
+  color: var(--muted);
+}
+.proposal details {
+  margin-top: 12px;
+  font-size: 11px;
+}
+.proposal details summary {
+  cursor: pointer;
+  color: var(--accent-strong);
+  font-weight: 600;
 }
 .proposal-buttons {
   display: flex;

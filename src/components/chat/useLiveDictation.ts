@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { MicrophoneCapture, microphoneError } from '@/lib/client/microphone';
+import { settleBars, waveBars } from '@/lib/client/wave';
+import { LiveUploader } from '@/lib/client/live-upload';
 
 export type LivePhase = 'idle' | 'connecting' | 'streaming' | 'error';
 
@@ -45,6 +47,8 @@ async function* readSse(body: ReadableStream<Uint8Array>): AsyncGenerator<Bridge
 
 /**
  * Continuous voice input through the server bridge to Meta realtime ASR.
+ * Transcripts arrive over one SSE response; audio goes up as short POSTs
+ * (see LiveUploader), so it works on plain HTTP/1.1.
  * Partials only preview; committed turns merge into the draft and the user
  * still sends manually. Same guarantees as file dictation: no auto-send,
  * late results are ignored, the mic releases on stop.
@@ -54,14 +58,16 @@ export function useLiveDictation({ onCommit, onActivityChange, onPresence }: Opt
     phase: 'idle' as LivePhase,
     seconds: 0,
     level: 0,
+    levels: [] as number[],
     error: '',
     partial: '',
     overflow: '',
   });
   const phase = useRef<LivePhase>('idle');
   const generation = useRef(0);
+  const latestBars = useRef<number[]>([]);
   const capture = useRef<MicrophoneCapture | null>(null);
-  const writer = useRef<WritableStreamDefaultWriter<Uint8Array> | null>(null);
+  const uploader = useRef<LiveUploader | null>(null);
   const abort = useRef<AbortController | null>(null);
 
   function transition(next: LivePhase, patch: Partial<typeof state> = {}) {
@@ -78,7 +84,8 @@ export function useLiveDictation({ onCommit, onActivityChange, onPresence }: Opt
   function teardown() {
     capture.current?.cancel();
     capture.current = null;
-    writer.current = null;
+    uploader.current?.abandon();
+    uploader.current = null;
     abort.current?.abort();
     abort.current = null;
   }
@@ -95,12 +102,8 @@ export function useLiveDictation({ onCommit, onActivityChange, onPresence }: Opt
     // Release the microphone immediately; committed turns still arrive.
     capture.current?.cancel();
     capture.current = null;
-    try {
-      await writer.current?.close();
-    } catch {
-      // Upload already torn down; pending turns still flush through SSE.
-    }
-    writer.current = null;
+    // Sends the remaining audio and asks Meta to drain; turns still flush through SSE.
+    await uploader.current?.close();
     if (generation.current === token)
       setState((previous) => ({ ...previous, partial: '' }));
   }
@@ -109,33 +112,34 @@ export function useLiveDictation({ onCommit, onActivityChange, onPresence }: Opt
     if (phase.current !== 'idle' && phase.current !== 'error') return;
     const token = ++generation.current;
     teardown();
-    transition('connecting', { error: '', partial: '', overflow: '' });
+    latestBars.current = [];
+    transition('connecting', { error: '', partial: '', overflow: '', seconds: 0, level: 0, levels: [] });
     const controller = new AbortController();
     abort.current = controller;
-    const pipe = new TransformStream<Uint8Array, Uint8Array>();
-    const upload = pipe.readable;
-    const write = pipe.writable.getWriter();
-    writer.current = write;
     const fail = (message: string) => {
       if (generation.current !== token) return;
       teardown();
       transition('error', { error: message, partial: '' });
     };
+    const upload = new LiveUploader(fail);
+    uploader.current = upload;
     try {
       const mic = new MicrophoneCapture({
         onProgress: (seconds, level) => {
           if (generation.current === token && phase.current === 'streaming')
-            setState((previous) => ({ ...previous, seconds, level }));
+            setState((previous) => ({
+              ...previous,
+              seconds,
+              level,
+              levels: latestBars.current,
+            }));
         },
         onLimit: () => void stop(),
         onInterrupted: () => fail('El audio se interrumpió. Volvé a intentar.'),
         onSamples: (samples) => {
           if (generation.current !== token || phase.current !== 'streaming') return;
-          try {
-            void write.write(floatToPcm16(samples)).catch(() => {});
-          } catch {
-            // Upload torn down; the SSE tail still flushes pending turns.
-          }
+          latestBars.current = settleBars(latestBars.current, waveBars(samples));
+          upload.push(floatToPcm16(samples));
         },
       });
       capture.current = mic;
@@ -148,12 +152,9 @@ export function useLiveDictation({ onCommit, onActivityChange, onPresence }: Opt
         return;
       }
       transition('streaming');
-      const response = await fetch('/api/voice-stream?mode=ENDPOINTING', {
+      const response = await fetch('/api/voice-stream?op=start&mode=ENDPOINTING', {
         method: 'POST',
-        body: upload,
         signal: controller.signal,
-        // @ts-expect-error Duplex half is required for streaming uploads.
-        duplex: 'half',
       });
       if (generation.current !== token) return;
       if (!response.ok || !response.body) {
@@ -166,8 +167,9 @@ export function useLiveDictation({ onCommit, onActivityChange, onPresence }: Opt
       for await (const { event, data } of readSse(response.body)) {
         if (generation.current !== token) return;
         try {
-          const parsed = JSON.parse(data) as { transcript?: string; message?: string };
-          if (event === 'partial' && typeof parsed.transcript === 'string')
+          const parsed = JSON.parse(data) as { id?: string; transcript?: string; message?: string };
+          if (event === 'ready' && typeof parsed.id === 'string') upload.attach(parsed.id);
+          else if (event === 'partial' && typeof parsed.transcript === 'string')
             setState((previous) => ({ ...previous, partial: parsed.transcript as string }));
           else if (event === 'turn' && typeof parsed.transcript === 'string' && parsed.transcript.trim()) {
             setState((previous) => ({ ...previous, partial: '' }));

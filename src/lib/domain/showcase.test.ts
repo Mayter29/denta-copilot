@@ -55,6 +55,22 @@ describe('reprogramación en lote', () => {
     expect(batch.proposals.every((p) => p.change.date !== friday)).toBe(true);
   });
 
+  it('no mueve citas que ya empezaron ese día', () => {
+    const state = seedWorkspace('2026-10-27', { showcase: true });
+    const friday = state.appointments.find((a) => a.id === 'demo-show-elena')!.date;
+    const midday = new Date(`${friday}T12:00:00-06:00`);
+    const batch = proposeBatchReschedule(
+      state,
+      { doctorId: 'valeria', date: friday, motivo: 'La doctora se retira al mediodía.' },
+      midday,
+    );
+    expect(batch.affected.map((a) => a.time)).toEqual(['13:00', '15:00']);
+    const evening = new Date(`${friday}T20:00:00-06:00`);
+    expect(() =>
+      proposeBatchReschedule(state, { doctorId: 'valeria', date: friday, motivo: 'Ya terminó el día.' }, evening),
+    ).toThrow('No hay citas');
+  });
+
   it('rechaza motivo corto, profesional ajeno y día vacío', () => {
     const state = seedWorkspace('2026-10-27', { showcase: true });
     expect(() => proposeBatchReschedule(state, { doctorId: 'valeria', date: '2026-10-30', motivo: 'x' }, now)).toThrow();

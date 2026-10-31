@@ -1,6 +1,6 @@
 'use client';
-import { CalendarCheck2, Check, CheckCheck, X } from 'lucide-react';
-import type { Proposal } from '@/lib/domain/types';
+import { CalendarCheck2, Check, CheckCheck, LoaderCircle, X } from 'lucide-react';
+import { formatClinicDate, type Appointment, type Proposal } from '@/lib/domain/types';
 
 const states: Record<Proposal['status'], string> = {
   pending: 'Pendiente de tu confirmación',
@@ -20,8 +20,14 @@ export function BatchProposalCard({
   onDecideBatch,
   doctors = [],
   services = [],
+  appointments = [],
+  deciding = null,
 }: {
   proposals: Proposal[];
+  /** Current agenda, to show the original slot of each pending move. */
+  appointments?: Appointment[];
+  /** ID or batch ID currently being applied. */
+  deciding?: string | null;
   busy: boolean;
   onDecide: (id: string, approved: boolean) => void;
   onDecideBatch: (batchId: string, approved: boolean) => void;
@@ -32,13 +38,13 @@ export function BatchProposalCard({
   if (!first?.change.batchId) return null;
   const batchId = first.change.batchId;
   const pending = proposals.filter((p) => p.status === 'pending');
-  const confirmed = proposals.length - pending.length;
+  const confirmed = proposals.filter((p) => p.status === 'confirmed').length;
   return (
     <article className={`proposal batch ${pending.length ? 'pending' : 'confirmed'}`}>
       <div className="proposal-title">
         <CalendarCheck2 size={19} />
         <strong>
-          Reagendar en lote · {proposals.length} cita(s)
+          Reagendar en lote · {proposals.length} {proposals.length === 1 ? 'cita' : 'citas'}
         </strong>
         <span className="badge">
           {confirmed}/{proposals.length} aplicadas
@@ -48,6 +54,10 @@ export function BatchProposalCard({
       <ul className="batch-rows">
         {proposals.map((proposal) => {
           const c = proposal.change;
+          const before =
+            proposal.status === 'pending'
+              ? appointments.find((a) => a.id === c.appointmentId)
+              : undefined;
           return (
             <li key={proposal.id} className={`batch-row ${proposal.status}`}>
               <div>
@@ -57,7 +67,15 @@ export function BatchProposalCard({
                   {doctors.find((d) => d.id === c.doctorId)?.name}
                 </span>
                 <span>
-                  {c.date} · {c.time} · {states[proposal.status]}
+                  {before ? (
+                    <>
+                      <s>
+                        {formatClinicDate(before.date)} {before.time}
+                      </s>{' '}
+                      →{' '}
+                    </>
+                  ) : null}
+                  {formatClinicDate(c.date)} · {c.time} · {states[proposal.status]}
                 </span>
               </div>
               {proposal.status === 'pending' ? (
@@ -69,7 +87,7 @@ export function BatchProposalCard({
                     disabled={busy}
                     onClick={() => onDecide(proposal.id, true)}
                   >
-                    <Check size={15} />
+                    {deciding === proposal.id ? <LoaderCircle size={15} className="spinner" /> : <Check size={15} />}
                   </button>
                   <button
                     type="button"
@@ -94,8 +112,8 @@ export function BatchProposalCard({
           </p>
           <div className="proposal-buttons">
             <button className="primary" disabled={busy} onClick={() => onDecideBatch(batchId, true)}>
-              <CheckCheck size={16} />
-              Confirmar todas ({pending.length})
+              {deciding === batchId ? <LoaderCircle size={16} className="spinner" /> : <CheckCheck size={16} />}
+              {deciding === batchId ? 'Aplicando…' : `Confirmar todas (${pending.length})`}
             </button>
             <button
               className="secondary"

@@ -62,7 +62,10 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
       { model, now },
     );
     expect(result.kind).toBe('proposal');
-    expect(result.text).toContain('Propuesta pendiente');
+    // Server text from the proposal; the model's false "ya agendé" never reaches the person.
+    expect(result.text).not.toContain('Ya agendé');
+    expect(result.text).toContain('Reservar valoración para Marina Ficticia con Dra. Valeria Soto, mié 28 oct a las 11:00.');
+    expect(result.text).toContain('Todavía no cambió nada');
     expect(result.proposals[0].change).toEqual({ action: 'book', ...booking });
     expect(state.appointments).toHaveLength(3);
     expect(state.audit).toEqual([]);
@@ -110,6 +113,55 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
     );
     expect(state.proposals).toEqual([]);
     expect(state.appointments.every((a) => a.status === 'scheduled')).toBe(true);
+  });
+
+  it('encuentra al paciente aunque se escriba sin tildes ni mayúsculas', async () => {
+    const state = seedWorkspace('2026-10-27');
+    const model = scriptedModel([
+      { toolName: 'listAppointments', input: { patient: 'luis solis' } },
+      (prompt) => {
+        const found = toolOutput<{ id: string }[]>(prompt, 'listAppointments');
+        expect(found.map((a) => a.id)).toEqual(['demo-luis']);
+        return final('answer', 'Luis tiene cita hoy a las 10:30.');
+      },
+    ]);
+    expect((await runSecretary(state, '¿Cuándo es la cita de luis solis?', { model, now })).kind).toBe(
+      'answer',
+    );
+  });
+
+  it('una corrección reemplaza la tarjeta pendiente anterior', async () => {
+    const state = seedWorkspace('2026-10-27');
+    await runSecretary(state, 'Agendá a Marina a las 11', { model: scriptedModel(bookSteps), now });
+    const first = state.proposals[0];
+    const later = scriptedModel([
+      { toolName: 'proposeBooking', input: { ...booking, patient: 'marina ficticia', time: '14:00' } },
+      proposalFinal,
+    ]);
+    const result = await runSecretary(state, 'Mejor a las 14', { model: later, now });
+    expect(result.proposals.map((p) => p.change.time)).toEqual(['14:00']);
+    expect(state.proposals.find((p) => p.id === first.id)?.status).toBe('rejected');
+    expect(state.proposals.filter((p) => p.status === 'pending')).toHaveLength(1);
+    expect(state.audit).toEqual([]);
+  });
+
+  it('dos alternativas del mismo turno conviven', async () => {
+    const state = seedWorkspace('2026-10-27');
+    const model = scriptedModel([
+      { toolName: 'proposeBooking', input: booking },
+      { toolName: 'proposeBooking', input: { ...booking, time: '14:00' } },
+      (prompt) => {
+        const ids = (prompt as { content: { type: string; toolName?: string; output?: { value?: { id: string } } }[] }[])
+          .flatMap((m) => (Array.isArray(m.content) ? m.content : []))
+          .filter((part) => part.type === 'tool-result' && part.toolName === 'proposeBooking')
+          .map((part) => part.output!.value!.id);
+        return final('proposal', 'Dos opciones', [], ids);
+      },
+    ]);
+    const result = await runSecretary(state, 'Dame dos opciones para Marina', { model, now });
+    expect(result.kind).toBe('proposal');
+    expect(result.proposals).toHaveLength(2);
+    expect(state.proposals.every((p) => p.status === 'pending')).toBe(true);
   });
 
   it('espacio ocupado devuelve conflicto real y ninguna tarjeta', async () => {
@@ -251,7 +303,7 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
     ]);
     const result = await runSecretary(state, 'Hacé seguimiento a Luis', { model, now });
     expect(result.kind).toBe('proposal');
-    expect(result.text).toContain('Propuesta pendiente');
+    expect(result.text).toContain('Agregar un recordatorio al canal simulado de Luis Solís');
     expect(result.execution).toBe('none');
     expect(state.patientThread).toHaveLength(before);
     expect(state.audit).toEqual([]);
@@ -279,9 +331,7 @@ describe('evaluaciones conversacionales offline · SDK + herramientas reales', (
         },
       },
       (prompt) => {
-        expect(toolOutput<{ error: string }>(prompt, 'proposeFollowUp').error).toContain(
-          'confirmed',
-        );
+        expect(toolOutput<{ error: string }>(prompt, 'proposeFollowUp').error).toContain('confirmada');
         return final('answer', 'Ana ya confirmó.');
       },
     ]);

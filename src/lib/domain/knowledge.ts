@@ -31,23 +31,21 @@ export const knowledge = [
       'Usar solo personas y situaciones inventadas. No ingresar expedientes, identificaciones, teléfonos ni datos clínicos reales. El asistente gestiona operaciones administrativas. WhatsApp y voz en vivo aún no están conectados.',
   },
 ];
-const normalize = (s: string) =>
+/** Case- and accent-insensitive form for lexical matching ("Jimenez" finds "Jiménez"). */
+export const foldText = (s: string) =>
   s
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 export function retrieveKnowledge(query: string) {
-  const words = normalize(query)
+  const words = foldText(query)
     .split(/\W+/)
     .filter((w) => w.length > 2);
   return knowledge
-    .map((source) => ({
-      ...source,
-      score: words.reduce(
-        (n, w) => n + (normalize(source.title + ' ' + source.content).includes(w) ? 1 : 0),
-        0,
-      ),
-    }))
+    .map((source) => {
+      const haystack = foldText(source.title + ' ' + source.content);
+      return { ...source, score: words.filter((w) => haystack.includes(w)).length };
+    })
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);

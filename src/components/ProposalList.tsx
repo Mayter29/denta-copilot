@@ -1,5 +1,5 @@
 'use client';
-import type { Proposal } from '@/lib/domain/types';
+import type { Appointment, Proposal } from '@/lib/domain/types';
 import { ProposalCard } from './ProposalCard';
 import { BatchProposalCard } from './BatchProposalCard';
 
@@ -16,8 +16,14 @@ export function ProposalList({
   services,
   onDecide,
   onDecideBatch,
+  appointments,
+  deciding,
 }: {
   proposals: Proposal[];
+  /** Current agenda; when given, pending reschedules show their original slot. */
+  appointments?: Appointment[];
+  /** ID or batch ID currently being applied. */
+  deciding?: string | null;
   busy: boolean;
   doctors?: Names;
   services?: Names;
@@ -48,6 +54,8 @@ export function ProposalList({
               onDecideBatch={decideBatch}
               doctors={doctors}
               services={services}
+              appointments={appointments}
+              deciding={deciding}
             />
           ))
         : null}
@@ -58,9 +66,15 @@ export function ProposalList({
             key={proposal.id}
             proposal={proposal}
             busy={busy}
+            applying={deciding === proposal.id}
             onDecide={onDecide}
             doctors={doctors}
             services={services}
+            previous={
+              proposal.status === 'pending' && proposal.change.action === 'reschedule'
+                ? appointments?.find((a) => a.id === proposal.change.appointmentId)
+                : undefined
+            }
           />
         ))}
     </>

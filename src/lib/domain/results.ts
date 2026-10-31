@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { DomainError } from './agenda';
-import type { Proposal, Workspace } from './types';
+import { doctors, formatClinicDate, services, type Proposal, type Workspace } from './types';
 
 export const resultSchema = z.strictObject({
   kind: z.enum(['answer', 'needs_input', 'proposal']),
@@ -45,10 +45,7 @@ export function verifyResult(
     kind: draft.kind,
     execution: 'none',
     // Action state is exclusively server text; model prose cannot announce a write.
-    text:
-      draft.kind === 'proposal'
-        ? 'Propuesta pendiente. Revisá la tarjeta y confirmá con un clic para aplicar el cambio.'
-        : draft.text,
+    text: draft.kind === 'proposal' ? proposalSummary(proposals, state) : draft.text,
     sources: resolvedSources,
     proposals,
   };
@@ -72,4 +69,34 @@ export function executionReceipt(state: Workspace, proposalId: string) {
   )
     return null;
   return structuredClone(proposal.receipt);
+}
+
+const nameOf = (list: { id: string; name: string }[], id: string) => list.find((x) => x.id === id)?.name ?? id;
+const person = (patient: string) => patient.replace(' (demo)', '');
+
+/** One line per pending change, built only from server data (never model prose). */
+function describe(proposal: Proposal, state: Workspace) {
+  const c = proposal.change;
+  const service = nameOf(services, c.serviceId).toLowerCase();
+  // Only «control de ortodoncia» is masculine in the demo catalog.
+  const the = c.serviceId === 'ortho_control' ? 'el' : 'la';
+  const doctor = nameOf(doctors, c.doctorId);
+  const when = `${formatClinicDate(c.date)} a las ${c.time}`;
+  if (c.action === 'book') return `Reservar ${service} para ${person(c.patient)} con ${doctor}, ${when}.`;
+  if (c.action === 'cancel') return `Cancelar ${the} ${service} de ${person(c.patient)} del ${when} (${doctor}).`;
+  if (c.action === 'follow_up')
+    return `Agregar un recordatorio al canal simulado de ${person(c.patient)} por su cita del ${when}.`;
+  const before = state.appointments.find((a) => a.id === c.appointmentId);
+  const from = before ? ` del ${formatClinicDate(before.date)} a las ${before.time}` : '';
+  return `Mover ${the} ${service} de ${person(c.patient)}${from} al ${when} (${doctor}).`;
+}
+
+/** Server-owned text for a proposal turn: what will change, and that nothing changed yet. */
+export function proposalSummary(proposals: Proposal[], state: Workspace) {
+  const lines = proposals.map((p) => describe(p, state));
+  const head =
+    lines.length === 1
+      ? `Preparé esta propuesta: ${lines[0]}`
+      : [`Preparé ${lines.length} propuestas:`, '', ...lines.map((line) => `- ${line}`)].join('\n');
+  return `${head}\n\nTodavía no cambió nada: confirmá en la tarjeta para aplicarlo.`;
 }

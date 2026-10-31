@@ -32,6 +32,9 @@ const byTool: Record<string, ChatProgressId> = {
   proposeBooking: 'proposal',
   proposeCancellation: 'proposal',
   proposeReschedule: 'proposal',
+  proposeFollowUp: 'proposal',
+  proposeBatchReschedule: 'proposal',
+  getDailyInsights: 'agenda',
 };
 
 /** Map a real server tool call to user-visible progress. Null = no public activity. */

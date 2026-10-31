@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { CalendarDays, Clock3, ArrowUpRight, BookOpen, History } from 'lucide-react';
 import type { Attendance, Workspace } from '@/lib/domain/types';
 import { LOCAL_CATALOG, type AgendaCatalog } from '@/lib/domain/catalog';
@@ -18,6 +19,7 @@ export function AgendaPanel({
   catalog = LOCAL_CATALOG,
   onPatientReply,
   replyBusy,
+  footer,
 }: {
   state: Workspace;
   date: string;
@@ -27,6 +29,8 @@ export function AgendaPanel({
   catalog?: AgendaCatalog;
   onPatientReply?: (appointmentId: string, reply: 'confirm' | 'reschedule' | 'cancel') => void;
   replyBusy?: string | null;
+  /** Demo controls under the environment note (reachable at every width). */
+  footer?: ReactNode;
 }) {
   const appointments = state.appointments
     .filter((a) => a.date === date && a.status === 'scheduled')
@@ -185,6 +189,7 @@ export function AgendaPanel({
           Personas y datos completamente ficticios.
         </p>
       </div>
+      {footer}
     </aside>
   );
 }

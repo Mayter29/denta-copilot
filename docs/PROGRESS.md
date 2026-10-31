@@ -1,3 +1,26 @@
+# Progreso · 31 de octubre de 2026 · preparación para jueces
+
+Rama `feat/hackathon-final`, sin push ni despliegue.
+
+- Batería real `pnpm eval:scenarios` (12 escenarios, 17 turnos con Meta): 12/12 en tres corridas. Detalle en [EVALUACIONES.md](EVALUACIONES.md).
+- Defecto encontrado y corregido: una corrección dejaba confirmable la tarjeta anterior.
+- Latencia: `reasoningEffort: 'low'` bajó p50 de 6,1 s a 3,6–4,2 s y p90 de 13,0 s a 5,8–7,9 s, con las mismas decisiones.
+- Resumen de propuestas generado por el servidor; «Aplicando…» en la tarjeta que se confirma; «Reiniciar demo» al pie del panel de contexto, accesible en escritorio, tablet y móvil (verificado en el navegador).
+- README reescrito para evaluadores. `pnpm check` (238 pruebas, build), `pnpm eval:offline` 34/34. React Doctor: 11 avisos, ninguno nuevo sin justificar.
+
+# Progreso · 30 de octubre de 2026 (noche) · calidad del bot y diseño
+
+Implementado y probado localmente, sin desplegar. Prompts `secretary-v5-denta` y `secretary-v5-connected`.
+
+- Batería real de 12 pedidos de recepción contra Meta (briefing, disponibilidad, reservar con fecha relativa, cancelar, reagendar, ambigüedad, precio, lote, domingo, consulta clínica, «¿quién tiene espacio?», recordatorio). Antes: 10/12 correctos (preguntaba «¿qué lunes?» y ofrecía al ortodoncista para valoración). Después: 12/12. Presupuesto usado: ~50 turnos de chat en total, incluidos navegador y reproducciones.
+- Turno pausado reproducido con historial real: el primer paso terminaba por `length` (2 de 3 intentos). Muse Spark cuenta razonamiento como salida (~1,4–1,8k tokens medidos). Se subió `maxOutputTokens` a 4.000 en ambos agentes; 3/3 tras el cambio.
+- Prompt: calendario de 14 días con día de la semana (`clinicCalendar`), regla para el día que coincide con hoy, fechas legibles en prosa, horarios resumidos, búsqueda del paciente antes de pedir datos.
+- Dominio: cada profesional declara sus servicios y `validateSlot` rechaza combinaciones inválidas (el ortodoncista solo hace control de ortodoncia). El lote ignora citas que ya empezaron. Búsqueda de pacientes sin tildes ni mayúsculas. Errores de seguimiento en español. Semilla showcase: Pablo pasa a valoración con la Dra. Valeria. Sesiones locales antiguas pueden conservar la combinación anterior.
+- UI (`/demo`): cada tarjeta se muestra bajo el mensaje que la creó; reagendar muestra «antes → después»; fechas «vie 6 nov» sin ICU (sin desajuste de hidratación); briefing con plurales y huecos agrupados; chips de hora sin extremos de rango; pie del compositor reducido a una línea; comprobante con estilo propio. `/app/copiloto` conserva las tarjetas al final.
+- Navegación con el lenguaje visual de Dentary: ítems neutros, activo con tinte turquesa, barra lateral de 4 px, icono de acento y foco visible; en `/demo` el resaltado sigue la sección elegida. Grabación (patrón de EVA): bloque compacto y centrado de 40 barras calculadas del bloque de audio actual (sin movimiento inventado; en silencio queda gris), degradado turquesa→azul, reloj contra el límite de 60 s, y borde del compositor con degradado cónico que gira al enfocar y más rápido al grabar; respeta movimiento reducido. Probado con pruebas de componente; falta QA con micrófono físico.
+- Voz en vivo reparada: el «Failed to fetch» venía de que Chrome rechaza subidas en streaming sobre HTTP/1.1. Ahora el audio va en POST cortos y el texto por SSE ([diseño](VOZ.md)). Verificado en Chrome contra Meta real con señal sintética; falta voz real. React Doctor suma `await` dentro de un bucle en `live-upload.ts`: intencional, los bloques deben ir de a uno y en orden.
+- Verificado: `pnpm check` verde (220 pruebas), `pnpm eval:offline` 31/31, navegador con Meta real (reagendar, reserva en dos turnos con chip, lote 5/5 confirmado), móvil 375 px sin desborde, consola sin errores en carga limpia. React Doctor: 10 avisos (9 previos + `js-set-map-lookups` en `agent.ts`, falso positivo sobre `String.includes`).
+
 # Progreso · 30 de octubre de 2026 (rama `feat/denta-wow`, sin merge)
 
 ## Avance wow para el hackatón (implementado local, verificado)
