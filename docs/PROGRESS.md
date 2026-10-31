@@ -1,3 +1,13 @@
+# Progreso · 31 de octubre de 2026 · preparación para jueces
+
+Rama `feat/hackathon-final`, sin push ni despliegue.
+
+- Batería real `pnpm eval:scenarios` (12 escenarios, 17 turnos con Meta): 12/12 en tres corridas. Detalle en [EVALUACIONES.md](EVALUACIONES.md).
+- Defecto encontrado y corregido: una corrección dejaba confirmable la tarjeta anterior.
+- Latencia: `reasoningEffort: 'low'` bajó p50 de 6,1 s a 3,6–4,2 s y p90 de 13,0 s a 5,8–7,9 s, con las mismas decisiones.
+- Resumen de propuestas generado por el servidor; «Aplicando…» en la tarjeta que se confirma; «Reiniciar demo» al pie del panel de contexto, accesible en escritorio, tablet y móvil (verificado en el navegador).
+- README reescrito para evaluadores. `pnpm check` (238 pruebas, build), `pnpm eval:offline` 34/34. React Doctor: 11 avisos, ninguno nuevo sin justificar.
+
 # Progreso · 30 de octubre de 2026 (noche) · calidad del bot y diseño
 
 Implementado y probado localmente, sin desplegar. Prompts `secretary-v5-denta` y `secretary-v5-connected`.

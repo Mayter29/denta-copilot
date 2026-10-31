@@ -57,16 +57,17 @@ Presupuesto: 12 escenarios y 17 turnos de modelo por corrida, cada uno con los m
 
 ### Resultados del 31 de octubre de 2026
 
-Dos corridas completas y una comparación previa de tres turnos. Todas contra Meta real (`muse-spark-1.3`).
+Tres corridas completas y una comparación previa de tres turnos. Todas contra Meta real (`muse-spark-1.3`).
 
 | Configuración | Escenarios | p50 por turno | p90 | Máximo | Tokens de salida por turno |
 | --- | --- | --- | --- | --- | --- |
 | Esfuerzo de razonamiento por defecto | 12/12 | 6,1 s | 13,0 s | 13,3 s | 497–3.846 |
 | `reasoningEffort: 'low'` (actual) | 12/12 | 3,6 s | 5,8 s | 7,0 s | 353–975 |
+| `low`, tercera corrida con la comprobación del escenario 09 | 12/12 | 4,2 s | 7,9 s | 8,2 s | — |
 
 El tiempo se va casi todo en el razonamiento de Muse Spark antes de cada llamada a herramientas; las herramientas locales tardan milisegundos. Con `low` se mantienen las mismas decisiones y se reducen a la mitad la latencia y los tokens. Se aplica en ambos agentes mediante `META_PROVIDER_OPTIONS`. Una corrida es una muestra, no un percentil estable.
 
-La primera corrida encontró un defecto real: al corregir la hora, la tarjeta anterior seguía confirmable. Ahora una propuesta nueva para la misma cita, o la misma reserva del mismo paciente y servicio, descarta la anterior pendiente. Las alternativas ofrecidas en un mismo turno conviven. Hay pruebas offline para ambos casos. La comprobación de la tarjeta descartada se agregó al escenario 09 después de esta corrida; la próxima la ejecuta.
+La primera corrida encontró un defecto real: al corregir la hora, la tarjeta anterior seguía confirmable. Ahora una propuesta nueva para la misma cita, o la misma reserva del mismo paciente y servicio, descarta la anterior pendiente. Las alternativas ofrecidas en un mismo turno conviven. Hay pruebas offline para ambos casos. La tercera corrida ya verifica en el escenario 09 que la tarjeta corregida queda descartada.
 
 ## Evidencia de este corte
 
