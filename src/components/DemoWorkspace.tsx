@@ -317,15 +317,7 @@ export function DemoWorkspace() {
               <span>Demostración local · datos ficticios</span>
             </div>
           </div>
-          <DemoReset
-            disabled={busy}
-            onReset={async () => {
-              setDraft('');
-              setDate('');
-              setSection('copilot');
-              await load();
-            }}
-          />
+
         </div>
       </nav>
       <main className="main">
@@ -495,6 +487,17 @@ export function DemoWorkspace() {
           catalog={catalog}
           onPatientReply={(appointmentId, reply) => void onPatientReply(appointmentId, reply)}
           replyBusy={replyBusy}
+          footer={
+            <DemoReset
+              disabled={busy}
+              onReset={async () => {
+                setDraft('');
+                setDate('');
+                setSection('copilot');
+                await load();
+              }}
+            />
+          }
         />
       ) : null}
     </div>
